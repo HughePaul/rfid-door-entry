@@ -1,0 +1,16 @@
+{
+  "name": "rfid-door-entry-server",
+  "description": "",
+  "main": "./index",
+  "author": {
+    "name": "Paul Winkler"
+  },
+  "version": "0.0.1",
+  "repository": {
+    "type": "git"
+  },
+  "dependencies": {
+    "async": "latest",
+    "serialport": "latest"
+  }
+}

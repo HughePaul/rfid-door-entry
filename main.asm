@@ -1,12 +1,12 @@
 
 ;**********************************************************************
 ;                                                                     *
-;    Filename:	    xxx.asm                                           *
-;    Date:                                                            *
-;    File Version:                                                    *
+;    Filename:	    main.asm                                          *
+;    Date:          29/07/2012                                        *
+;    File Version:  v1.0                                              *
 ;                                                                     *
-;    Author:                                                          *
-;    Company:                                                         *
+;    Author:        Paul Winkler                                      *
+;    Company:       HughePaul                                         *
 ;                                                                     * 
 ;                                                                     *
 ;**********************************************************************

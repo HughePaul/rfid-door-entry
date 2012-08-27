@@ -70,9 +70,7 @@ Reader.prototype.open = function(port) {
 
 	this.serialPort.on('open', function() {
 		reader.emit('open', port);
-		if(reader.level) {
-			reader.setLevel(reader.level);
-		}
+		reader.setLevel(reader.level);
 		reader.getCards();
 	});
 
@@ -92,7 +90,7 @@ Reader.prototype.close = function() {
 
 Reader.prototype.reset = function() {
 	this._cards = {};
-	this._level = 15;
+	this._level = 0;
 	this._busy = false;
 	this._commands = [];
 };
@@ -125,10 +123,8 @@ Reader.prototype.decode = function(line) {
 		case '@':
 			this.reset();
 			this.emit('reset');
-			if(reader.level) {
-				reader.setLevel(reader.level);
-			}
-			reader.getCards();
+			this.setLevel(this.level);
+			this.getCards();
 			break;
 		// error from reader
 		case '!':

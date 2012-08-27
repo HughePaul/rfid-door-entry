@@ -1,10 +1,11 @@
+
 ;**********************************************************************
 ;                                                                     *
-;    Filename:	    main.asm                                          *
-;    Date:          29/07/2012                                        *
+;    Filename:	    xxx.asm                                           *
+;    Date:                                                            *
 ;    File Version:                                                    *
 ;                                                                     *
-;    Author:        Paul Winkler                                      *
+;    Author:                                                          *
 ;    Company:                                                         *
 ;                                                                     * 
 ;                                                                     *
@@ -168,19 +169,27 @@ ADDR_MEM_R	EQU	b'10100111'
 		movwf	fsr_temp
 
 ; Serial port handling code
+	banksel	PIR1
+
+	; check for serial errors
+	btfss	RCSTA, FERR
+		goto int_no_serial_frame_error
+	bcf		RCSTA, CREN
+	bsf		RCSTA, CREN
+	goto int_serial_in
+int_no_serial_frame_error:
+
+	btfss	RCSTA, OERR
+		goto int_no_serial_overrun_error
+	bcf		RCSTA, CREN
+	bsf		RCSTA, CREN
+int_no_serial_overrun_error:
+
 int_serial_in:
 	; check if there is any byte to read
-	banksel	PIR1
 	btfss	PIR1, RCIF
 		goto int_no_serial_in
 	banksel	RCSTA
-	; check for serial error
-	btfss	RCSTA, FERR
-		goto int_no_serial_error
-	bcf		RCSTA, CREN
-	bsf		RCSTA, CREN
-	goto int_no_serial_in
-int_no_serial_error:
 	; read byte
 	movfw	serial_in_write
 	addlw	serial_in00
@@ -247,31 +256,41 @@ int_timer:
 	; increment timer
 	incf	timer_counter, f
 
+int_timer_flash:
+	btfss	programming_mode, 0
+		goto int_timer_no_flash
+	btfsc	timer_counter, 0
+		goto int_timer_flash_on
+	bcf		PORTA, OUT_ERROR
+	goto int_timer_no_flash
+int_timer_flash_on:
+	bsf		PORTA, OUT_ERROR
+
+int_timer_no_flash:
+
 int_timer_leds:
 	; turn off lights when it reaches 4 ( 2 seconds )
 	movfw	timer_counter
-	addlw	-D'4'
+	addlw	-D'6'
 	btfss	STATUS, Z
 		goto int_no_timer_leds
-	bcf		PORTA, OUT_GOOD
-	bcf		PORTA, OUT_BAD
-	bcf		PORTA, OUT_ERROR
+	clrf		PORTA
 int_no_timer_leds:
 
-int_timer_door:
-	; turn off lock when it reaches 8 ( 4 seconds )
+int_timer_programming:
+	; turn off programming mode when it reaches 8 ( 4 seconds )
 	movfw	timer_counter
-	addlw	-D'8'
+	addlw	-D'12'
 	btfss	STATUS, Z
-		goto	int_no_timer_door
-	bcf		PORTA, OUT_DOOR
+		goto	int_no_timer_programming
 
 	; turn programming mode off
+	clrf	PORTA
 	clrf	programming_mode
 
 	call unset_timer
 
-int_no_timer_door:
+int_no_timer_programming:
 
 int_no_timer:
 
@@ -416,8 +435,9 @@ serial_process_KO:
 	clrf	STATUS
 	; serial_process_ko
 	call serial_start
+	call serial_end
 	movlw	'?'
-	goto serial_end
+	goto serial_write_end
 
 
 serial_process_add:
@@ -441,8 +461,6 @@ serial_process_add:
 	call indf_dec_lookup
 	movwf	mem_write6
 	call indf_dec_lookup
-	andlw	0x0f
-	iorwf	security_level, w
 	movwf	mem_write7
 
 	goto	data_add_direct
@@ -500,6 +518,7 @@ serial_process_sec_print:
 	clrf	STATUS
 	; print out current security level
 	call serial_start
+	call serial_end
 	movlw	'S'
 	call serial_write
 	movlw	' '
@@ -523,6 +542,7 @@ serial_process_open:
 	call	set_timer
 
 	call serial_start
+	call serial_end
 	movlw	'O'
 	goto serial_write_end
 
@@ -578,7 +598,7 @@ main:
 	movlw	b'00100110'
 	movwf	TXSTA
 
-	movlw	0x70
+	movlw	0xE0
 	movwf	security_level
 	clrf	programming_mode
 	clrf	print_memory
@@ -596,8 +616,24 @@ main:
 
 	clrf	card_state;
 
-	; serial_process_ok
+
+	; test leds
+	bsf		PORTA, OUT_GOOD
+	bsf		PORTA, OUT_BAD
+	bsf		PORTA, OUT_ERROR
+
+	; let serial port settle
+test_loop:
+	clrwdt
+	decfsz	card_state, f
+		goto test_loop
+
+	; clear leds
+	clrf	PORTA
+
+	; serial_process_reset
 	call serial_start
+	call serial_end
 	movlw	'@'
 	call serial_write_end
 
@@ -635,6 +671,9 @@ main_print_memory:
 
 	clrf	STATUS
 	clrf	print_memory
+
+	call serial_start
+	call serial_end
 
 	; print each item as they are read
 	movlw	0xFF
@@ -825,6 +864,7 @@ data_win:
 	call	set_timer
 
 	call serial_start
+	call serial_end
 	movlw	'G'
 	call serial_write_space
 	goto serial_write_read
@@ -838,6 +878,7 @@ data_noperm:
 	call	set_timer
 
 	call serial_start
+	call serial_end
 	movlw	'N'
 	call serial_write_space
 	goto serial_write_read
@@ -845,6 +886,7 @@ data_noperm:
 
 	; if not found and in programming mode add to database
 data_add:
+	clrf	programming_mode
 	clrf	STATUS
 
 	; copy bytes
@@ -907,6 +949,7 @@ data_add_write:
 	call	set_timer
 
 	call serial_start
+	call serial_end
 	movlw	'A'
 	call serial_write_space
 	goto serial_write_write
@@ -930,6 +973,7 @@ data_remove_direct:
 	goto rfid_fail_4
 
 data_remove:
+	clrf	programming_mode
 	clrf	STATUS
 
 	; find next available spot
@@ -954,6 +998,7 @@ data_remove:
 	call	set_timer
 
 	call serial_start
+	call serial_end
 	movlw	'R'
 	call serial_write_space
 	goto serial_write_read
@@ -968,6 +1013,7 @@ data_fail:
 	call	set_timer
 
 	call serial_start
+	call serial_end
 	movlw	'B'
 	call serial_write_space
 	goto serial_write_match
@@ -1004,6 +1050,7 @@ rfid_fail:
 	call	set_timer
 
 	call serial_start
+	call serial_end
 	movlw	'!'
 	call serial_write_space
 	movfw	rfid_status
@@ -1171,6 +1218,8 @@ mem_read_bank:
 		goto mem_fail
 
 mem_read_record:
+	clrwdt
+
 	; start read of 8 bytes
 	movlw	D'8'
 	movwf	mem_pos

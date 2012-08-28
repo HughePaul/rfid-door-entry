@@ -33,7 +33,9 @@
 
 
 
-;***** VARIABLE DEFINITIONS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; VARIABLE DEFINITIONS
+
 w_temp        EQU     0x70        ; variable used for context saving 
 status_temp   EQU     0x71        ; variable used for context saving
 fsr_temp      EQU     0x72        ; variable used for context saving
@@ -156,17 +158,32 @@ ADDR_MEM_W	EQU	b'10100110'
 ADDR_MEM_R	EQU	b'10100111'
 
 
-;**********************************************************************
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; RESET
+
 		ORG     0x000             ; processor reset vector
 		goto    main              ; go to beginning of program
 
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; INTERUPT HANDLER
+
 		ORG     0x004             ; interrupt vector location
+
+		; interup header
+
 		movwf   w_temp            ; save off current W register contents
 		movf	STATUS,w          ; move status register into W register
 		movwf	status_temp       ; save off contents of STATUS register
 		movfw	FSR
 		movwf	fsr_temp
+
+		; interupt code
 
 ; Serial port handling code
 	banksel	PIR1
@@ -294,6 +311,8 @@ int_no_timer_programming:
 
 int_no_timer:
 
+		; interupt trailer
+
 		movfw	fsr_temp
 		movwf	FSR
 		movf    status_temp,w     ; retrieve copy of STATUS register
@@ -302,8 +321,16 @@ int_no_timer:
 		swapf   w_temp,w          ; restore pre-isr W register contents
 		retfie                    ; return from interrupt
 
-; lookup tables
 
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; LOOKUP TABLES
+
+; these must be kept high up above the program memory divide
+
+; convert nibble in W to a hex char in W
 hex_lookup:
 	andlw	0x0f
 	addwf	PCL, f
@@ -324,7 +351,7 @@ hex_lookup:
 	retlw	'E'
 	retlw	'F'
 
-
+; convert 2 caps hex chars starting at FSR to a byte in W, incrementing FSR 
 indf_dec_lookup:
 	movfw	INDF
 	call dec_lookup
@@ -337,6 +364,7 @@ indf_dec_lookup:
 	incf	FSR, f
 	return	
 
+; convert caps hex char in W to a nibble in W
 dec_lookup:
 	; if < '0' return 0
 	addlw	-'0'
@@ -368,17 +396,20 @@ dec_lookup_AtoF:
 	addlw	+'G'-'A'+0x0A
 	return
 
+; enable timer used for leds, door lock, and programming mode
 set_timer:
 	clrf	timer_counter
 	banksel	PIE1
 	bsf		PIE1, TMR1IE
+; reset timer
 update_timer:
 	banksel	TMR1L
 	clrf	TMR1L
-	movlw	D'12'
+	movlw	D'12' ; 500ms approx
 	movwf	TMR1H
 	bcf		PIR1, TMR1IF
 	return
+; disable timer
 unset_timer:
 	banksel	PIE1
 	bcf		PIE1, TMR1IE
@@ -387,13 +418,19 @@ unset_timer:
 	return
 
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; SERIAL INPUT PROCESSING
+
+; process a string received from the serial port
 serial_process:
-	; add a null
+	; add a null terminator char to end of string
 	movlw	serial_in_write
 	movwf	FSR
 	clrf	INDF
 
-	; clear pointer
+	; clear pointer ready for next string
 	clrf	serial_in_write
 
 	; ignore empty lines
@@ -406,43 +443,43 @@ serial_process:
 	btfsc	STATUS, Z
 		return
 
-	; if ADD then add this id at this level
+	; if A(DD) then add this id at this level
 	addlw	D'13'-'A'
 	btfsc	STATUS, Z
 		goto serial_process_add
 
-	; if REM then remove this id at this level
+	; if R(EMOVE) then remove this id at this level
 	addlw	'A'-'R'
 	btfsc	STATUS, Z
 		goto serial_process_rem
 
-	; if PRINT then print all entries
+	; if P(RINT) then print all entries
 	addlw	'R'-'P'
 	btfsc	STATUS, Z
 		goto serial_process_print
 
-	; if REM then remove this id at this level
+	; if S(ECURITY_LEVEL) then remove this id at this level
 	addlw	'P'-'S'
 	btfsc	STATUS, Z
 		goto serial_process_sec
 
-	; if OPEN then open the door
+	; if O(PEN) then open the door
 	addlw	'S'-'O'
 	btfsc	STATUS, Z
 		goto serial_process_open
 
-serial_process_KO:
+	; an unknown command was given. reply with a question mark
 	clrf	STATUS
-	; serial_process_ko
 	call serial_start
 	call serial_end
 	movlw	'?'
 	goto serial_write_end
 
-
+; add card to memory
 serial_process_add:
 	clrf	STATUS
 
+	; decode and copy the bytes supplied to the write buffer
 	movlw	serial_in02
 	movwf	FSR
 
@@ -463,12 +500,14 @@ serial_process_add:
 	call indf_dec_lookup
 	movwf	mem_write7
 
+	; write this to memory
 	goto	data_add_direct
 
+; remove card from memory
 serial_process_rem:
 	clrf	STATUS
 
-	clrf	STATUS
+	; decode and copy the bytes supplied to the match buffer
 	movlw	serial_in02
 	movwf	FSR
 
@@ -487,13 +526,30 @@ serial_process_rem:
 	call indf_dec_lookup
 	movwf	mem_match6
 	call indf_dec_lookup
-	andlw	0x0f
+	andlw	0x0f 			; clear out any suplied security level
 	movwf	mem_match7
 
-	goto	data_remove_direct
+	; look for this card in memory
+	call mem_read
 
+	andlw	0xFF	; if found then remove by overwriting with zeros
+	btfsc	STATUS, Z
+		goto data_remove
+
+	addlw	-D'2'	; if not found then report error ! 50
+	btfsc	STATUS, Z
+		goto error_50
+
+	; a memory error occured. report ! 43
+	movlw	0x03
+	goto error_4x
+
+
+
+; set the or print security level
 serial_process_sec:
-	; if SEC then set security level
+
+	; if no space or operand given then just print out the current security level
 	movfw	serial_in01
 	sublw	' ' ; check for space
 	btfss	STATUS, Z
@@ -508,12 +564,13 @@ serial_process_sec:
 	btfsc	STATUS, Z
 		goto serial_process_sec_print
 
+	; set the security level in memory
 	movwf	security_level
-	swapf	security_level, f
+	swapf	security_level, f   ; it is kept in the high nibble in memory so it can be used more easily
 
-	; save security level to memory (eeprom write)
+	; TODO: save security level to memory (eeprom write)
 
-
+; print out the current security level
 serial_process_sec_print:
 	clrf	STATUS
 	; print out current security level
@@ -523,14 +580,16 @@ serial_process_sec_print:
 	call serial_write
 	movlw	' '
 	call serial_write
-	swapf	security_level, w
+	swapf	security_level, w   ; get the high nibble
 	call hex_lookup
 	goto serial_write_end
 
+; set a flag to print out the memory as this is done outside of the interupt loop
 serial_process_print:
 	incf	print_memory, f
 	return
-		
+
+; open the door		
 serial_process_open:
 	clrf	STATUS
 	call	unset_timer
@@ -541,12 +600,18 @@ serial_process_open:
 	bsf		PORTA, OUT_DOOR
 	call	set_timer
 
+	; print out that we opened the door
 	call serial_start
 	call serial_end
 	movlw	'O'
 	goto serial_write_end
 
 
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; SETUP
 
 main:
 ; set up io
@@ -639,6 +704,11 @@ test_loop:
 
 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; MAIN LOOP
+
+
 main_no_card:
 	bcf		card_state, 0
 main_loop:
@@ -664,6 +734,12 @@ main_loop:
 
 	goto main_loop
 
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; PRINT MEMORY
+
 main_print_memory:
 	; disable serial receive
 	banksel	PIE1
@@ -685,6 +761,10 @@ main_print_memory:
 	movlw	'P'
 	goto serial_write_end
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; READ RFID CARD
 
 read_card:
 	call unset_timer
@@ -715,15 +795,15 @@ rfid_write:
 	movlw	ADDR_RFID_W ; address write
 	call I2c_send
 	btfss	STATUS, Z
-		goto rfid_fail_1
+		goto error_10
 	movlw	D'1'	; length = 1
 	call I2c_send
 	btfss	STATUS, Z
-		goto rfid_fail_1
+		goto error_10
 	movlw	0x01	; command = 0x01
 	call I2c_send
 	btfss	STATUS, Z
-		goto rfid_fail_1
+		goto error_10
 	call I2c_stop
 
 	; read result from rfid reader
@@ -745,7 +825,7 @@ rfid_read_continue:
 
 	; check if we have any length
 	btfsc	STATUS, Z
-		goto rfid_fail_2
+		goto error_20
 
 	clrf	rfid_pos
 rfid_read_loop:
@@ -775,10 +855,10 @@ rfid_read_no_len:
 	movfw	rfid_cmd
 	addlw	-D'1'
 	btfss	STATUS, Z
-		goto rfid_fail_3
+		goto error_30
 	movfw	rfid_status
 	btfss	STATUS, Z
-		goto rfid_fail
+		goto error_xx
 
 
 	; copy bytes
@@ -809,10 +889,14 @@ rfid_read_no_len:
 	btfsc	STATUS, Z
 		goto rfid_not_found
 
-	; a memory error occured
+	; a memory error occured. report ! 41
 	movlw	0x01
-	goto rfid_fail_4
+	goto error_4x
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; CHECK CARD
 
 rfid_found:
 	; check security level
@@ -855,6 +939,11 @@ rfid_not_found:
 
 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; CARD ACTIONS
+
+; Card has permission to open door
 data_win:
 	; turn on good access light
 	clrf	STATUS
@@ -870,6 +959,7 @@ data_win:
 	goto serial_write_read
 
 
+; card is recognised but has no permission to open door
 data_noperm:
 	; turn on good and bad access light
 	clrf	STATUS
@@ -884,12 +974,13 @@ data_noperm:
 	goto serial_write_read
 
 
-	; if not found and in programming mode add to database
+
+; card not found and in programming mode so add to database
 data_add:
-	clrf	programming_mode
+	clrf	programming_mode ; cancel programming mode
 	clrf	STATUS
 
-	; copy bytes
+	; copy bytes from rfid buffer to write buffer
 	movfw	rfid_byte0
 	movwf	mem_write0
 	movfw	rfid_byte1
@@ -913,7 +1004,7 @@ data_add_direct:
 	clrf	STATUS
 
 	; find next available spot
-	; set comparison to zero to look for deleted slots
+	; set match buffer to zero to look for deleted slots
 	clrf	mem_match0
 	clrf	mem_match1
 	clrf	mem_match2
@@ -932,16 +1023,16 @@ data_add_direct:
 	btfsc	STATUS, Z
 		goto data_add_write
 
-	; a memory error occured
+	; a memory error occured. report ! 42
 	movlw	0x02
-	goto rfid_fail_4
+	goto error_4x
 
 data_add_write:
 
 	call	mem_write
 	andlw	0xFF
 	btfss	STATUS, Z
-		goto rfid_fail_4 ; a memory error occured
+		goto error_4x ; a memory error occured
 
 	; turn on both lights
 	bsf		PORTA, OUT_GOOD
@@ -955,29 +1046,12 @@ data_add_write:
 	goto serial_write_write
 
 
-data_remove_direct:
-	clrf	STATUS
-
-	call mem_read
-
-	andlw	0xFF	; return 0 found
-	btfsc	STATUS, Z
-		goto data_remove
-
-	addlw	-D'2'	; return 2 is end of data, ie not found
-	btfsc	STATUS, Z
-		goto rfid_fail_5
-
-	; a memory error occured
-	movlw	0x03
-	goto rfid_fail_4
-
+; card found and in programming mode so remove card
 data_remove:
-	clrf	programming_mode
+	clrf	programming_mode ; cancel programming mode
 	clrf	STATUS
 
-	; find next available spot
-	; set comparison to zero to look for deleted slots
+	; set write buffer to zero to overwrite the slot and mark it as deleted
 	clrf	mem_write0
 	clrf	mem_write1
 	clrf	mem_write2
@@ -990,7 +1064,7 @@ data_remove:
 	call	mem_write
 	andlw	0xFF
 	btfss	STATUS, Z
-		goto rfid_fail_40 ; a memory error occured
+		goto error_4x ; a memory error occured
 
 	; turn on both lights
 	bsf		PORTA, OUT_BAD
@@ -1005,7 +1079,7 @@ data_remove:
 
 
 
-	; if not found
+; card not found in database
 data_fail:
 	; turn on bad access light
 	clrf	STATUS
@@ -1019,31 +1093,33 @@ data_fail:
 	goto serial_write_match
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ERRORS
 
-	; if error
-rfid_fail_1:
+; an error occured
+error_10:
 	movlw	0x10 ; no ack from command write
 	movwf	rfid_status
-	goto rfid_fail
-rfid_fail_2:
+	goto error
+error_20:
 	movlw	0x20 ; no reply length
 	movwf	rfid_status
-	goto rfid_fail
-rfid_fail_3:
+	goto error
+error_30:
 	movlw	0x30 ; incorrect reply command
 	movwf	rfid_status
-	goto rfid_fail
-rfid_fail_40:
+	goto error
+error_40:
 	clrw
-rfid_fail_4:
+error_4x:
 	andlw	0x0F
 	iorlw	0x40 ; database error
 	movwf	rfid_status
-	goto rfid_fail
-rfid_fail_5:
+	goto error
+error_50:
 	movlw	0x50 ; not found
 	movwf	rfid_status
-rfid_fail:
+error_xx:
 	clrf	STATUS
 	; turn on error light
 	bsf		PORTA, OUT_ERROR
@@ -1059,7 +1135,10 @@ rfid_fail:
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; SERIAL OUT
 
+; print out match buffer
 serial_write_match:
 	call serial_start
 
@@ -1082,6 +1161,7 @@ serial_write_match:
 
 	goto serial_end
 
+; print out read buffer
 serial_write_read:
 	call serial_start
 
@@ -1104,6 +1184,7 @@ serial_write_read:
 
 	goto serial_end
 
+; print out write buffer
 serial_write_write:
 	call serial_start
 
@@ -1127,8 +1208,9 @@ serial_write_write:
 	goto serial_end
 
 
+; get FSR ready for serial output
 serial_start:
-; check if we should reset the output pointer
+	; check if we should reset the output pointer
 	movfw	serial_out_read
 	subwf	serial_out_write, w
 	btfss	STATUS, Z
@@ -1142,10 +1224,12 @@ serial_start_write_no_clear:
 	movwf	FSR
 	return
 
-
+; write a byte in W followed by a space to serial out buffer
 serial_write_space:
 	call serial_write
 	movlw	' '
+
+; write bye in W to serial out buffer
 serial_write:
 	movwf	INDF
 	; inc serial out pos and check it is within range
@@ -1164,6 +1248,7 @@ serial_write:
 	clrf	STATUS
 	return
 
+; write byte in W to serial out buffer as two hex chars
 serial_write_hex:
 	movwf	hex_write_buffer
 	swapf	hex_write_buffer, w
@@ -1173,8 +1258,11 @@ serial_write_hex:
 	call hex_lookup
 	goto serial_write
 
+; write byte in W followed by new lines to serial out buffer
 serial_write_end:
 	call serial_write
+
+; write new lines to serial out buffer
 serial_end:
 	movlw	0x0D
 	call serial_write
@@ -1185,7 +1273,11 @@ serial_end:
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DATABASE READ
 
+; read database until a record matches the match buffer of the end of data is received.
+; if the print flag is set then output each record to serial, waiting for the serial transfer to complete each time.
 mem_read:
 	; reset position
 	clrf	mem_hi
@@ -1343,7 +1435,10 @@ mem_read_next_record:
 	goto mem_read_record ; continuous read
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DATABASE WRITE
 
+; write the record in the write buffer to the current database position
 mem_write:
 	clrf	STATUS
 
@@ -1406,6 +1501,10 @@ mem_fail:
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; I2C communications
+
+
 i2c_byte	EQU		0x7F
 i2c_state	EQU		0x7E
 
@@ -1440,6 +1539,8 @@ SWAIT MACRO
 	nop
 ENDM
 
+
+; pause for approx 5ms to allow slave to deal with data
 I2c_pause:
 	movwf	i2c_state
 I2c_pause_loop:
@@ -1454,7 +1555,7 @@ I2c_pause_inner_loop:
 
 
 
-
+; send a start bit
 I2c_start:
 	bcf		STATUS, RP0
 	bcf		SDI
@@ -1466,6 +1567,7 @@ I2c_start:
 	SWAIT
 	return
 
+; send a stopm bit
 I2c_stop:
 	SCL_LOW
 	SWAIT
@@ -1477,6 +1579,7 @@ I2c_stop:
 	SWAIT
 	return
 
+; send byte in W and return ack as Z bit
 I2c_send:
 	movwf	i2c_byte
 	movlw	0x08
@@ -1512,6 +1615,7 @@ I2c_send_high:
 	SCL_LOW
 	return	; ack is status Z bit, 1 is ack, 0 is noack
 
+; receive a byte and return as W
 I2c_recv:
 	clrf	i2c_byte
 	movlw	0x08
@@ -1535,6 +1639,7 @@ I2c_recv_high:
 	movfw	i2c_byte
 	return
 
+; send an ack bit
 I2c_ack:
 	SDA_HIGH
 	SCL_LOW
@@ -1546,6 +1651,7 @@ I2c_ack:
 	SCL_LOW
 	return
 
+; send a noack bit
 I2c_noack:
 	SDA_HIGH
 	SCL_LOW
@@ -1558,7 +1664,7 @@ I2c_noack:
 	return
 
 
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; END
 
 	END                       ; directive 'end of program'

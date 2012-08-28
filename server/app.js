@@ -1,6 +1,5 @@
 
 var config = require('./config');
-console.log('Config:', config, Server);
 
 var Server = require('./lib/Server');
 var server = new Server(config);
@@ -10,27 +9,7 @@ var app = connect()
 	.use(connect.logger())
 	.use(connect.cookieParser())
 	.use(connect.cookieSession({ secret: config.secret, key: 'doorentry.sess', cookie: { maxAge: 60 * 60 * 24 }}))
-	.use(connect.json())
-	.use(connect.methodOverride())
-	.use(connect.static(__dirname + '/html'));
-
-// respond with data
-function respond(res, json) {
-	if(!json.result) { json.result = 'OK'; }
-	res
-		.statusCode(200)
-		.end(JSON.stringify(json));
-}
-
-// check auth
-function checkAuth(req, res) {
-	if(!req.session.auth) {
-		respond(res, { status: 'NOAUTH' } );
-		return false;
-	}
-	return true;
-}
-
+	.use(connect.json());
 
 // Router
 app.method = function(method, url, handler) {
@@ -52,6 +31,28 @@ app.method = function(method, url, handler) {
 app.get = function(url, handler) { return app.method('GET', url, handler); };
 app.post = function(url, handler) { return app.method('POST', url, handler); };
 app.put = function(url, handler) { return app.method('PUT', url, handler); };
+
+
+
+// respond with data
+function respond(res, json) {
+	if(!json.result) { json.result = 'OK'; }
+	res.writeHead(200, {'Content-Type': 'application/json'});
+	res.end(JSON.stringify(json));
+}
+
+
+// check auth
+function checkAuth(req, res) {
+	if(!req.session.auth) {
+		respond(res, { status: 'NOAUTH' } );
+		return false;
+	}
+	return true;
+}
+
+
+
 
 
 // Routes
@@ -97,13 +98,16 @@ app.put(/^\/card\/([0-9-]+)/, function(req, res){
 
 
 // view log
-app.get(/^\/log\/([0-9]+)?/, function(req, res){
+app.get(/^\/log(\/([0-9]+))?/, function(req, res){
 	if(checkAuth(req, res)) {
-		var from = req.params[1] || 0;
+		var from = req.params[2] || 0;
 		respond(res, { from: from, log: server.getEventLog(from) });
 	}
 });
 
+
+// static files
+app.use(connect.static(__dirname + '/html'));
 
 
 if (!module.parent) {

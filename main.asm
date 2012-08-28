@@ -330,6 +330,8 @@ int_no_timer:
 
 ; these must be kept high up above the program memory divide
 
+
+
 ; convert nibble in W to a hex char in W
 hex_lookup:
 	andlw	0x0f
@@ -351,6 +353,8 @@ hex_lookup:
 	retlw	'E'
 	retlw	'F'
 
+
+
 ; convert 2 caps hex chars starting at FSR to a byte in W, incrementing FSR 
 indf_dec_lookup:
 	movfw	INDF
@@ -363,6 +367,8 @@ indf_dec_lookup:
 	iorwf	serial_buffer, w
 	incf	FSR, f
 	return	
+
+
 
 ; convert caps hex char in W to a nibble in W
 dec_lookup:
@@ -395,29 +401,6 @@ dec_lookup_0to9:
 dec_lookup_AtoF:
 	addlw	+'G'-'A'+0x0A
 	return
-
-; enable timer used for leds, door lock, and programming mode
-set_timer:
-	clrf	timer_counter
-	banksel	PIE1
-	bsf		PIE1, TMR1IE
-; reset timer
-update_timer:
-	banksel	TMR1L
-	clrf	TMR1L
-	movlw	D'12' ; 500ms approx
-	movwf	TMR1H
-	bcf		PIR1, TMR1IF
-	return
-; disable timer
-unset_timer:
-	banksel	PIE1
-	bcf		PIE1, TMR1IE
-	banksel	PORTA
-	clrf	PORTA
-	return
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -734,6 +717,35 @@ main_loop:
 
 	goto main_loop
 
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; TIMER
+
+; enable timer used for leds, door lock, and programming mode
+set_timer:
+	clrf	timer_counter
+	banksel	PIE1
+	bsf		PIE1, TMR1IE
+
+; reset timer to wait next 500ms
+update_timer:
+	banksel	TMR1L
+	clrf	TMR1L
+	movlw	D'12' ; 500ms approx
+	movwf	TMR1H
+	bcf		PIR1, TMR1IF
+	return
+
+; disable timer
+unset_timer:
+	banksel	PIE1
+	bcf		PIE1, TMR1IE
+	banksel	PORTA
+	clrf	PORTA
+	return
 
 
 

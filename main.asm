@@ -185,6 +185,8 @@ ADDR_MEM_R	EQU	b'10100111'
 
 		; interupt code
 
+
+
 ; Serial port handling code
 	banksel	PIR1
 
@@ -230,6 +232,9 @@ int_serial_in:
 		call serial_process	
 int_no_serial_in:
 
+
+
+
 int_serial_out:
 	; check if we can send
 	banksel	PIR1
@@ -260,8 +265,10 @@ int_serial_out_send:
 	btfsc	serial_out_read, 5
 		andlw	0x2F
 	movwf	serial_out_read
-
 int_no_serial_out:
+
+
+
 
 int_timer:
 ; check timer1 overflow
@@ -282,22 +289,23 @@ int_timer_flash:
 	goto int_timer_no_flash
 int_timer_flash_on:
 	bsf		PORTA, OUT_ERROR
-
 int_timer_no_flash:
+
 
 int_timer_leds:
 	; turn off lights when it reaches 4 ( 2 seconds )
 	movfw	timer_counter
-	addlw	-D'6'
+	addlw	-D'4'
 	btfss	STATUS, Z
 		goto int_no_timer_leds
 	clrf		PORTA
 int_no_timer_leds:
 
+
 int_timer_programming:
 	; turn off programming mode when it reaches 8 ( 4 seconds )
 	movfw	timer_counter
-	addlw	-D'12'
+	addlw	-D'8'
 	btfss	STATUS, Z
 		goto	int_no_timer_programming
 
@@ -305,8 +313,8 @@ int_timer_programming:
 	clrf	PORTA
 	clrf	programming_mode
 
+	; disable timer
 	call unset_timer
-
 int_no_timer_programming:
 
 int_no_timer:
@@ -705,6 +713,10 @@ main_loop:
 	movfw	print_memory
 	btfss	STATUS, Z
 		call main_print_memory
+
+	; test if we had an unknown card and if so don't allow another card to be presented until the led is cleared
+	btfsc	PORTA, OUT_BAD
+		goto main_loop
 
 	; check proximity flag falling edge
 	banksel	PORTB

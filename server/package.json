@@ -1,7 +1,7 @@
 {
   "name": "rfid-door-entry-server",
   "description": "",
-  "main": "./index",
+  "main": "./app",
   "author": {
     "name": "Paul Winkler"
   },
@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "async": "latest",
-    "serialport": "latest"
+    "serialport": "latest",
+    "connect": "latest",
+    "sqlite3": "latest"
   }
 }

@@ -7,6 +7,7 @@ function Reader(port){
 
 	this._busy = false;
 	this._commands = [];
+	this._lastid = '';
 
 	this._def('isOpen', function(){ return !! this.serialPort; });
 	this._def('level', function(){ return this._level; }, function(l){ this.setLevel(l); });
@@ -95,15 +96,17 @@ Reader.prototype.reset = function() {
 	this._commands = [];
 };
 
-Reader.prototype.write = function(command) {
-	this._commands.push(command);
+Reader.prototype.write = function(command, id) {
+	this._commands.push({command: command, id: id});
 	this._writeWaiting();
 };
 
-Reader.prototype._writeWaiting = function(command) {
+Reader.prototype._writeWaiting = function() {
 	if(this._commands.length && !this.busy && this.serialPort) {
-		var data = new Buffer('\r\n'+this._commands.shift()+'\r\n', 'ascii');
+		var next = this._commands.shift();
+		var data = new Buffer('\r\n'+next.command+'\r\n', 'ascii');
 		this._busy = true;
+		this._lastid = next.id;
 		this.emit('dataout', data);
 		this.serialPort.write(data);
 	}
@@ -129,18 +132,23 @@ Reader.prototype.decode = function(line) {
 		// error from reader
 		case '!':
 			var error = {code: line.substr(2)};
-			switch(error.code) {
-				case '01': error.message = 'No card present'; break;
-				case '10': error.message = 'No ack from command write'; break;
-				case '20': error.message = 'No reply length'; break;
-				case '30': error.message = 'Incorrect reply command'; break;
-				case '40': error.message = 'Memory write error'; break;
-				case '41': error.message = 'Memory read error'; break;
-				case '42': error.message = 'Out of memory when adding record'; break;
-				case '43': error.message = 'End of memory when removing record'; break;
-				case '50': error.message = 'Record not found'; break;
+
+			if(error.code === '50') {
+				this.emit('notfound',this._lastid);
+			} else {
+				switch(error.code) {
+					case '01': error.message = 'No card present'; break;
+					case '10': error.message = 'No ack from command write'; break;
+					case '20': error.message = 'No reply length'; break;
+					case '30': error.message = 'Incorrect reply command'; break;
+					case '40': error.message = 'Memory write error'; break;
+					case '41': error.message = 'Memory read error'; break;
+					case '42': error.message = 'Out of memory when adding record'; break;
+					case '43': error.message = 'End of memory when removing record'; break;
+					case '50': error.message = 'Record not found'; break;
+				}
+				this.emit('error',error,this._lastid);
 			}
-			this.emit('error',error);
 			break;
 		// relay was manually activated
 		case 'O':
@@ -231,7 +239,7 @@ Reader.prototype.add = function(id, level) {
 	var card = id.substr(2,14);
 	card[14] = level.toString(16).substr(-1,1);
 	card[15] = id.substr(0,1);
-	this.write('A '+card.toUpperCase());
+	this.write('A '+card.toUpperCase(), id);
 };
 
 
@@ -240,7 +248,7 @@ Reader.prototype.remove = function(id) {
 	var card = id.substr(2,14);
 	card[14] = '0';
 	card[15] = id.substr(0,1);
-	this.write('R '+card.toUpperCase());
+	this.write('R '+card.toUpperCase(), id);
 };
 
 

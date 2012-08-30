@@ -19,7 +19,6 @@ function Reader(port){
 	}
 
 }
-
 sys.inherits(Reader, EventEmitter);
 
 Reader.prototype._def = function(name, getter, setter) {
@@ -236,6 +235,7 @@ Reader.prototype.getCards = function(cb) {
 
 Reader.prototype.add = function(id, level) {
 	if(!this.serialPort) { throw new Error("Not open"); }
+	this._cards[id] = level;
 	var card = id.substr(2,14);
 	card[14] = level.toString(16).substr(-1,1);
 	card[15] = id.substr(0,1);
@@ -245,6 +245,7 @@ Reader.prototype.add = function(id, level) {
 
 Reader.prototype.remove = function(id) {
 	if(!this.serialPort) { throw new Error("Not open"); }
+	delete this._cards[id];
 	var card = id.substr(2,14);
 	card[14] = '0';
 	card[15] = id.substr(0,1);

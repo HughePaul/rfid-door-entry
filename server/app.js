@@ -1,115 +1,102 @@
 
 var config = require('./config');
 
-var Server = require('./lib/Server');
-var server = new Server(config);
-
+var crypto = require('crypto');
+var http = require('http');
 var connect = require('connect');
-var app = connect()
-	.use(connect.logger())
-	.use(connect.cookieParser())
-	.use(connect.cookieSession({ secret: config.secret, key: 'doorentry.sess', cookie: { maxAge: 60 * 60 * 24 }}))
-	.use(connect.json());
+var socketio = require('socket.io');
 
-// Router
-app.method = function(method, url, handler) {
-	return this.use(function(req, res, next){
-		var p;
-		if (method.toUpperCase() !== req.method) { return next(); }
-		if(typeof url === 'string' && url === req.url) {
-			handler(req, res);
-			return;
-		}
-		if(typeof url === 'object' && (p = url.exec(req.url)) ) {
-			req.params = p;
-			handler(req, res);
-			return;
-		}
-		return next();
+var Cards = require('./lib/Cards');
+var cards = new Cards(config);
+
+// create app server
+var app = connect.createServer(
+	connect.logger(),
+	connect.static(__dirname + '/html')
+);
+
+// create http server
+var server = http.createServer(app);
+
+// listen for sockets
+var io = socketio.listen(server);
+
+function userCookie(username) {
+	if(!config.users[username]) { return null; }
+	return crypto.createHmac('sha1', config.secret).update(username+':'+config.users[username]).digest('hex');
+}
+
+// listen for connections
+io.sockets.on('connection', function (socket) {
+	socket.authed = false;
+
+	// check auth cookie
+	socket.on('auth', function (username, testCookie) {
+		var cookie = userCookie(username);
+		socket.authed = (testCookie && cookie && testCookie === cookie);
+		if(!socket.authed) { return socket.emit('noauth'); }
+		socket.emit('auth', username, cookie);
 	});
-};
-app.get = function(url, handler) { return app.method('GET', url, handler); };
-app.post = function(url, handler) { return app.method('POST', url, handler); };
-app.put = function(url, handler) { return app.method('PUT', url, handler); };
 
+	// login request
+	socket.on('login', function (username, password) {
+		// try login
+		socket.authed = (config.users[username] !== undefined && config.users[username] === password);
+		if(!socket.authed) { return socket.emit('noauth'); }
 
+		// set up cookie
+		socket.emit('auth', username, userCookie(username));
 
-// respond with data
-function respond(res, json) {
-	if(!json.result) { json.result = 'OK'; }
-	res.writeHead(200, {'Content-Type': 'application/json'});
-	res.end(JSON.stringify(json));
-}
-
-
-// check auth
-function checkAuth(req, res) {
-	if(!req.session.auth) {
-		respond(res, { status: 'NOAUTH' } );
-		return false;
-	}
-	return true;
-}
-
-
-
-
-
-// Routes
-
-// log in
-app.post('/login', function(req, res){
-	if(req.body.username && req.body.password && config.users[req.body.username] === req.body.password) {
-		req.session.auth = true;
-	} else {
-		req.session.auth = false;
-	}
-	respond(res, { status: req.session.auth ? 'OK' : 'NOAUTH' } );
-});
-
-// log out
-app.post('/logout', function(req, res){
-	req.session.auth = false;
-	respond(res, { status: 'NOAUTH' } );
-});
-
-
-
-// get card list
-app.get('/list', function(req, res){
-	if(checkAuth(req,res)) {
-		server.list(function(err, cards) {
-			respond(res, { status: err ? 'ERROR' : 'OK', error: err, cards: cards });
+		// get a bunch of logs
+		cards.getLog(100,function(err, items){
+			if(!err) { socket.emit('logs', items); }
 		});
-	}
-});
 
-
-// update card
-app.put(/^\/card\/([0-9-]+)/, function(req, res){
-	if(checkAuth(req,res)) {
-		var cardId = req.params[1];
-		var cardData = req.body;
-		server.update(cardId, cardData, function(err) {
-			respond(res, { status: err ? 'ERROR' : 'OK', error: err });
+		// return whole database
+		cards.getCards(function(err, cards){
+			if(!err) { socket.emit('cards', cards); }
 		});
-	}
+
+	});
+
+	var logHandler = function(item) {
+		if(socket.authed) {
+			socket.emit('log', item);
+		}
+	};
+
+	var updateHandler = function(id, card) {
+		if(socket.authed) {
+			socket.emit('card', id, card);
+		}
+	};
+
+	var removeHandler = function(id) {
+		if(socket.authed) {
+			socket.emit('card', id);
+		}
+	};
+
+	cards.on('log', logHandler);
+	cards.on('update', updateHandler);
+	cards.on('remove', removeHandler);
+
+	socket.on('disconnect', function () {
+		cards.removeListener('log',logHandler);
+		cards.removeListener('update', updateHandler);
+		cards.removeListener('remove', removeHandler);
+	});
+
+	socket.on('update', function (id, data) {
+		if(!socket.authed) { return socket.emit('noauth'); }
+	    cards.update(id, data);
+	});
+
 });
-
-
-// view log
-app.get(/^\/log(\/([0-9]+))?/, function(req, res){
-	if(checkAuth(req, res)) {
-		var from = req.params[2] || 0;
-		respond(res, { from: from, log: server.getEventLog(from) });
-	}
-});
-
-
-// static files
-app.use(connect.static(__dirname + '/html'));
 
 
 if (!module.parent) {
-  app.listen(config.port);
+  server.listen(config.port);
 }
+
+

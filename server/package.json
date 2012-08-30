@@ -13,6 +13,7 @@
     "async": "latest",
     "serialport": "latest",
     "connect": "latest",
+    "socket.io": "latest",
     "sqlite3": "latest"
   }
 }

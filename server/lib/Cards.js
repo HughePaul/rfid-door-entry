@@ -82,12 +82,21 @@ function Cards(config) {
 			return this.removeCard(id);
 		}
 
-		// if card is not on reader or level has changed then remove and add with new level
-		if (details && (!that.reader.cards[id] || that.reader.cards[id] !== details.level) ) {
-			if(that.reader.cards[id]) {
-				that.reader.remove(id);
+		try {
+			// if card is not on reader or level has changed then remove and add with new level
+			console.log('update reader', that.reader.cards[id], details.level);
+			if (details && (!that.reader.cards[id] || that.reader.cards[id] !== details.level) ) {
+				if(that.reader.cards[id]) {
+					console.log('Remove card from reader', id);
+					that.reader.remove(id);
+				}
+				if(details.level) {
+					console.log('Add card to reader', id, details.level);
+					that.reader.add(id, details.level);
+				}
 			}
-			that.reader.add(id, details.level);
+		} catch(e) {
+			console.error('Reader error:', e);
 		}
 
 		this.getCard(id, function(err, card) {
@@ -96,24 +105,29 @@ function Cards(config) {
 			db.serialize(function() {
 
 				if(!card) {
+					// if level is zero and no card then it was removed
+					if(!details.level) { return; }
+					// otherwise insert new record
+					console.log('Add card to database', id);
 					db.run("INSERT INTO cards (id) VALUES ($id)", { $id: id }, function(err) {
-						if(err) { console.error('Cards:db:',err); }
+						if(err) { console.error('Cards:db:cards:insert',err); }
 					});
 					card = {};
 				}
-				db.run("UPDATE cards SET level = $level, name = $name, modified = datetime('now'), avatar = $avatar, notes = $notes) WHERE id = $id", {
+				// update record with details
+				console.log('Update card in database', id);
+				db.run("UPDATE cards SET level = $level, name = $name, modified = datetime('now'), avatar = $avatar, notes = $notes WHERE id = $id", {
 					$id: id,
 					$level: details.level || card.level || 0,
 					$name: details.name || card.name || 'UNKNOWN',
 					$avatar: details.avatar || card.avatar || '',
 					$notes: details.notes || card.notes || ''
 				}, function(err) {
-					if(err) { return console.error('Cards:db:',err); }
+					if(err) { return console.error('Cards:db:cards:update',err); }
 
 					// get card back from the db and send to everyone as an update
 					that.getCard(id, function(err, card) {
-						if(err) { return console.error('Cards:db:',err); }
-						this.emit('update', id, card);
+						if(!err) { that.emit('card', id, card); }
 					});
 
 				});
@@ -124,14 +138,20 @@ function Cards(config) {
 
 	this.removeCard = function(id) {
 		db.serialize(function() {
+			console.log('Remove card from database', id);
 			db.run("DELETE FROM cards WHERE id = $id", { $id: id }, function(err) {
 				if(err) { console.error('Cards:db:',err); }
 			});
 		});
-		if(this.reader.cards[id]) {
-			this.reader.remove(id);
+		try {
+			if(this.reader.cards[id]) {
+				console.log('Remove card from reader', id);
+				this.reader.remove(id);
+			}
+		} catch(e) {
+			console.error('Reader error:', e);
 		}
-		this.emit('remove', id);
+		this.emit('card', id);
 		return this;
 	};
 
@@ -206,8 +226,8 @@ function Cards(config) {
 
 				var id;
 
-				for(id in dbCcards) {
-					if(!readeCards[id]) {
+				for(id in dbCards) {
+					if(!readerCards[id]) {
 						console.log('Syncing: Adding card',id,'to reader');
 						that.reader.add(id, dbCards[id].level);
 					}
@@ -226,22 +246,22 @@ function Cards(config) {
 		})
 		.on('access', function(id, level){
 			that.addLog({type: 'ACCESS', desc: 'Access granted', cardid: id, level: level});
-			that.updateCard(id, {level: level});
+			//that.updateCard(id, {level: level});
 		})
 		.on('noaccess', function(id, level){
 			that.addLog({type: 'NOACCESS', desc: 'Access denied', cardid: id, level: level});
-			that.updateCard(id, {level: level});
+			//that.updateCard(id, {level: level});
 		})
 		.on('unknown', function(id){
 			that.addLog({type: 'NOACCESS', desc: 'Access denied', cardid: id, level: 0});
 		})
 		.on('add', function(id, level){
 			that.addLog({type: 'ADDED', desc: 'Added card', cardid: id, level: level});
-			that.updateCard(id, {level: level});
+			//that.updateCard(id, {level: level});
 		})
 		.on('remove', function(id, level){
 			that.addLog({type: 'REMOVED', desc: 'Removed card', cardid: id, level: level});
-			that.updateCard(id);
+			//that.updateCard(id, {level: 0});
 		})
 		.on('level', function(level){
 			that.addLog({type: 'LEVEL', desc: 'Security Level', level: level});
@@ -249,6 +269,7 @@ function Cards(config) {
 
 
 	this.addLog({type: 'STARTUP', desc:'Server started'});
+	openReader();
 }
 sys.inherits(Cards, EventEmitter);
 

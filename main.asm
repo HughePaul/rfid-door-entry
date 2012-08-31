@@ -476,23 +476,44 @@ serial_process_add:
 
 	call indf_dec_lookup
 	movwf	mem_write0
+	movwf	mem_match0
 	call indf_dec_lookup
 	movwf	mem_write1
+	movwf	mem_match1
 	call indf_dec_lookup
 	movwf	mem_write2
+	movwf	mem_match2
 	call indf_dec_lookup
 	movwf	mem_write3
+	movwf	mem_match3
 	call indf_dec_lookup
 	movwf	mem_write4
+	movwf	mem_match4
 	call indf_dec_lookup
 	movwf	mem_write5
+	movwf	mem_match5
 	call indf_dec_lookup
 	movwf	mem_write6
+	movwf	mem_match6
 	call indf_dec_lookup
 	movwf	mem_write7
+	andlw	0x0f 			; clear out any suplied security level
+	movwf	mem_match7
 
-	; write this to memory
-	goto	data_add_direct
+	; look for this card in memory
+	call mem_read
+
+	andlw	0xFF	; if found then overwrite
+	btfsc	STATUS, Z
+    	goto data_add_write
+
+	addlw	-D'2'	; if not found then add
+	btfsc	STATUS, Z
+    	goto data_add_direct
+
+	; a memory error occured. report ! 43
+	movlw	0x03
+	goto error_4x
 
 ; remove card from memory
 serial_process_rem:
@@ -1124,22 +1145,22 @@ data_fail:
 error_10:
 	movlw	0x10 ; no ack from command write
 	movwf	rfid_status
-	goto error
+	goto error_xx
 error_20:
 	movlw	0x20 ; no reply length
 	movwf	rfid_status
-	goto error
+	goto error_xx
 error_30:
 	movlw	0x30 ; incorrect reply command
 	movwf	rfid_status
-	goto error
+	goto error_xx
 error_40:
 	clrw
 error_4x:
 	andlw	0x0F
 	iorlw	0x40 ; database error
 	movwf	rfid_status
-	goto error
+	goto error_xx
 error_50:
 	movlw	0x50 ; not found
 	movwf	rfid_status

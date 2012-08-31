@@ -235,20 +235,22 @@ Reader.prototype.getCards = function(cb) {
 
 Reader.prototype.add = function(id, level) {
 	if(!this.serialPort) { throw new Error("Not open"); }
+	console.log('Reader add', id, level);
 	this._cards[id] = level;
 	var card = id.substr(2,14);
-	card[14] = level.toString(16).substr(-1,1);
-	card[15] = id.substr(0,1);
+	card += level.toString(16).substr(-1,1);
+	card += id.substr(0,1);
 	this.write('A '+card.toUpperCase(), id);
 };
 
 
 Reader.prototype.remove = function(id) {
 	if(!this.serialPort) { throw new Error("Not open"); }
+	console.log('Reader remove', id);
 	delete this._cards[id];
 	var card = id.substr(2,14);
-	card[14] = '0';
-	card[15] = id.substr(0,1);
+	card += '0';
+	card += id.substr(0,1);
 	this.write('R '+card.toUpperCase(), id);
 };
 

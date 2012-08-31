@@ -11,7 +11,7 @@ var cards = new Cards(config);
 
 // create app server
 var app = connect.createServer(
-	connect.logger(),
+//	connect.logger(),
 	connect.static(__dirname + '/html')
 );
 
@@ -20,6 +20,7 @@ var server = http.createServer(app);
 
 // listen for sockets
 var io = socketio.listen(server);
+io.set('log level', 1);
 
 function userCookie(username) {
 	if(!config.users[username]) { return null; }
@@ -31,19 +32,19 @@ io.sockets.on('connection', function (socket) {
 	socket.authed = false;
 
 	function init() {
-		// get a bunch of logs
-		cards.getLog(10,function(err, items){
-			if(!err) { socket.emit('logs', items); }
-		});
-
 		// return whole database
 		cards.getCards(function(err, cards){
 			if(!err) { socket.emit('cards', cards); }
+		});
+		// get a bunch of logs
+		cards.getLog(10,function(err, items){
+			if(!err) { socket.emit('logs', items); }
 		});
 	}
 
 	// check auth cookie
 	socket.on('auth', function (username, testCookie) {
+		console.log('auth', username);
 		var cookie = userCookie(username);
 		socket.authed = (testCookie && cookie && testCookie === cookie);
 		if(!socket.authed) { return socket.emit('noauth'); }
@@ -53,6 +54,7 @@ io.sockets.on('connection', function (socket) {
 
 	// login request
 	socket.on('login', function (username, password) {
+		console.log('login', username);
 		// try login
 		socket.authed = (config.users[username] !== undefined && config.users[username] === password);
 		if(!socket.authed) { return socket.emit('noauth'); }
@@ -77,11 +79,13 @@ io.sockets.on('connection', function (socket) {
 	cards.on('card', cardHandler);
 
 	socket.on('disconnect', function () {
+		console.log('disconnect');
 		cards.removeListener('log',logHandler);
 		cards.removeListener('card', cardHandler);
 	});
 
 	socket.on('card', function (id, data) {
+		console.log('card update', id, data);
 		if(!socket.authed) { return socket.emit('noauth'); }
 	    cards.updateCard(id, data);
 	});

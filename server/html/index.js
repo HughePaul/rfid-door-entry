@@ -162,8 +162,24 @@ window.onload = function(){
 	function appendLog(item) {
 		var log = document.createElement('div');
 		log.className = 'log';
-		log.textContent = item.type+' '+item.desc;
-		logsDiv.insertBefore(log, logsDiv.firstChild);
+		if(item.cardid) {
+			var card = cardCache[item.cardid];
+			var avatar = document.createElement('div');
+			avatar.className = 'avatar';
+			avatar.style.backgroundImage = 'url('+ (card && card.avatar ? card.avatar : 'img/user.png') +')';
+			log.appendChild(avatar);
+			var logName = document.createElement('div');
+			logName.textContent = (card ? card.name : 'UNKNOWN') + ' (' + item.cardid+' level:'+item.level+')';
+			log.appendChild(logName);
+		}
+		var logText = document.createElement('div');
+		logText.textContent = item.type+' '+item.desc;
+		log.appendChild(logText);
+ 		if(item.type === 'LEVEL') {
+			var logLevel = document.createElement('div');
+			logLevel.textContent = '(level '+item.level+')';
+			log.appendChild(logLevel);
+		}		logsDiv.insertBefore(log, logsDiv.firstChild);
 	}
 
 	function updateDetails(id, newCard) {

@@ -8,6 +8,7 @@ function Reader(port){
 	this._busy = false;
 	this._commands = [];
 	this._lastid = '';
+	this._cards = {};
 
 	this._def('isOpen', function(){ return !! this.serialPort; });
 	this._def('level', function(){ return this._level; }, function(l){ this.setLevel(l); });
@@ -179,12 +180,11 @@ Reader.prototype.decode = function(line) {
 			break;
 		// access granted
 		case 'G':
-			delete this._cards[id];
+			this._cards[id] = level;
 			this.emit('access',id,level);
 			break;
 		// unknwon card
 		case 'B':
-			delete this._cards[id];
 			this.emit('unknown',id);
 			break;
 		// card found but access level too low
@@ -205,6 +205,7 @@ Reader.prototype.decode = function(line) {
 Reader.prototype.setLevel = function(level, cb) {
 	if(!this.serialPort) { throw new Error("Not open"); }
 	if(level) {
+		level = parseInt(level, 10);
 		level = level.toString(16).toUpperCase();
 	} else {
 		level = '';
@@ -235,6 +236,7 @@ Reader.prototype.getCards = function(cb) {
 
 Reader.prototype.add = function(id, level) {
 	if(!this.serialPort) { throw new Error("Not open"); }
+	level = parseInt(level, 10);
 	console.log('Reader add', id, level);
 	this._cards[id] = level;
 	var card = id.substr(2,14);

@@ -60,7 +60,7 @@ function Cards(config) {
 		db.serialize(function() {
 			db.all("SELECT id, timestamp, type, desc, cardid, level FROM log ORDER BY id DESC LIMIT $count", { $count: count }, function(err, items) {
 				if(err) { console.error('Cards:db:',err); }
-				if(cb) { cb(err, items); }
+				if(cb) { cb(err, items.reverse()); }
 			});
 		});
 	};
@@ -84,12 +84,7 @@ function Cards(config) {
 
 		try {
 			// if card is not on reader or level has changed then remove and add with new level
-			console.log('update reader', that.reader.cards[id], details.level);
 			if (details && (!that.reader.cards[id] || that.reader.cards[id] !== details.level) ) {
-				if(that.reader.cards[id]) {
-					console.log('Remove card from reader', id);
-					that.reader.remove(id);
-				}
 				if(details.level) {
 					console.log('Add card to reader', id, details.level);
 					that.reader.add(id, details.level);
@@ -246,22 +241,22 @@ function Cards(config) {
 		})
 		.on('access', function(id, level){
 			that.addLog({type: 'ACCESS', desc: 'Access granted', cardid: id, level: level});
-			//that.updateCard(id, {level: level});
+			that.updateCard(id, {level: level});
 		})
 		.on('noaccess', function(id, level){
 			that.addLog({type: 'NOACCESS', desc: 'Access denied', cardid: id, level: level});
-			//that.updateCard(id, {level: level});
+			that.updateCard(id, {level: level});
 		})
 		.on('unknown', function(id){
 			that.addLog({type: 'NOACCESS', desc: 'Access denied', cardid: id, level: 0});
 		})
 		.on('add', function(id, level){
 			that.addLog({type: 'ADDED', desc: 'Added card', cardid: id, level: level});
-			//that.updateCard(id, {level: level});
+			that.updateCard(id, {level: level});
 		})
 		.on('remove', function(id, level){
 			that.addLog({type: 'REMOVED', desc: 'Removed card', cardid: id, level: level});
-			//that.updateCard(id, {level: 0});
+			that.updateCard(id, {level: 0});
 		})
 		.on('level', function(level){
 			that.addLog({type: 'LEVEL', desc: 'Security Level', level: level});

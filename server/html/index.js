@@ -146,8 +146,17 @@ window.onload = function(){
 		username.value = sessionStorage.getItem("username");
 
 		login.style.display = 'block';
-		loginBtn.onclick = function() {
+
+		function doLogin() {
 			socket.emit('login', username.value, password.value);
+		}
+		loginBtn.onclick = doLogin;
+		username.onkeypress = function(e) {
+			var code = (e.keyCode ? e.keyCode : e.which);
+			if (code === 13) {
+				e.preventDefault();
+				doLogin();
+			}
 		};
 
 	}
@@ -171,6 +180,9 @@ window.onload = function(){
 			var logName = document.createElement('div');
 			logName.textContent = (card ? card.name : 'UNKNOWN') + ' (' + item.cardid+' level:'+item.level+')';
 			log.appendChild(logName);
+			logName.onclick = function() {
+				updateDetails(item.cardid);
+			};
 		}
 		var logText = document.createElement('div');
 		logText.textContent = item.type+' '+item.desc;

@@ -180,7 +180,7 @@ window.onload = function(){
 			var logName = document.createElement('div');
 			logName.textContent = (card ? card.name : 'UNKNOWN') + ' (' + item.cardid+' level:'+item.level+')';
 			log.appendChild(logName);
-			logName.onclick = function() {
+			log.onclick = function() {
 				updateDetails(item.cardid);
 			};
 		}
@@ -191,7 +191,8 @@ window.onload = function(){
 			var logLevel = document.createElement('div');
 			logLevel.textContent = '(level '+item.level+')';
 			log.appendChild(logLevel);
-		}		logsDiv.insertBefore(log, logsDiv.firstChild);
+		}
+		logsDiv.insertBefore(log, logsDiv.firstChild);
 	}
 
 	function updateDetails(id, newCard) {

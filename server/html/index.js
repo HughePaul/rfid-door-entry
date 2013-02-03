@@ -25,6 +25,8 @@ window.onload = function(){
 	saveBtn.disabled = true;
 	removeBtn.disabled = true;
 	addBtn.disabled = true;
+	currentLevel.disabled = true;
+	openBtn.disabled = true;
 
 	// connect socket and listen to events
 	var socket = io.connect();
@@ -41,6 +43,8 @@ window.onload = function(){
 		sessionStorage.setItem("username", username);
 		sessionStorage.setItem("cookie", cookie);
 		addBtn.disabled = false;
+		currentLevel.disabled = false;
+		openBtn.disabled = false;
 	});
 
 	socket.on('noauth', function () {

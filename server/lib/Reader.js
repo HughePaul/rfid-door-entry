@@ -213,6 +213,7 @@ Reader.prototype.setLevel = function(level, cb) {
 	if(typeof cb === 'function') {
 		this.once('level', cb);
 	}
+	console.log('Set Level', level);
 	this.write('S '+level);
 };
 
@@ -221,6 +222,7 @@ Reader.prototype.activate = function(cb) {
 	if(typeof cb === 'function') {
 		this.once('activate', cb);
 	}
+	console.log('Open Door');
 	this.write('O');
 };
 

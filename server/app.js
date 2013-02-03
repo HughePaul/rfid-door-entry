@@ -106,7 +106,12 @@ io.sockets.on('connection', function (socket) {
 
 	socket.on('open', function (level) {
 		if(!socket.authed) { return socket.emit('noauth'); }
-	    cards.activate();
+		try{
+		    cards.activate();
+		} catch(e) {
+			console.error(e);
+			socket.emit('error',e.message);
+		}
 	});
 
 });

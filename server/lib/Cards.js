@@ -6,6 +6,8 @@ var Reader = require('./Reader');
 function Cards(config) {
 	var that = this;
 
+	that.level = 0;
+
 	// open database
 	var filename = config.database || ':memory:';
 	console.log('Opening database:',filename);
@@ -40,8 +42,6 @@ function Cards(config) {
 			});
 		});
 	});
-
-
 
 	this.addLog = function(item) {
 		db.run("INSERT INTO log (timestamp, type, desc, cardid, level) VALUES (datetime('now'),?,?,?,?)", [
@@ -259,9 +259,18 @@ function Cards(config) {
 			that.updateCard(id, {level: 0});
 		})
 		.on('level', function(level){
+			that.level = level;
 			that.addLog({type: 'LEVEL', desc: 'Security Level', level: level});
+			that.emit('level', level);
 		});
 
+	this.activate = function(cb) {
+		this.reader.activate(cb);
+	};
+
+	this.setLevel = function(level, cb) {
+		this.reader.setLevel(level, cb);
+	};
 
 	this.addLog({type: 'STARTUP', desc:'Server started'});
 	openReader();

@@ -11,6 +11,8 @@ window.onload = function(){
 	var detailsDiv = document.getElementById('details');
 	var addBtn = document.getElementById('addBtn');
 	var removeBtn = document.getElementById('removeBtn');
+	var currentLevel = document.getElementById('currentLevel');
+	var openBtn = document.getElementById('openBtn');
 
 	var cardAvatarImg = document.getElementById('cardavatarimg');
 	var cardName = document.getElementById('cardname');
@@ -66,6 +68,9 @@ window.onload = function(){
 		appendLog(item);
 	});
 
+	socket.on('level', function (level) {
+		currentLevel.value = level;
+	});
 
 	var currentCardId = '';
 	var authing = false;
@@ -134,7 +139,7 @@ window.onload = function(){
 		cardDiv.appendChild(name);
 		var detail = document.createElement('div');
 		detail.className = 'cardsDetail';
-		detail.textContent = id+' level '+card.level;
+		detail.textContent = id+' Level '+card.level;
 		cardDiv.appendChild(detail);
 	}
 
@@ -159,6 +164,7 @@ window.onload = function(){
 			}
 		};
 
+		username.focus();
 	}
 
 	function appendLogs(logs) {
@@ -169,8 +175,9 @@ window.onload = function(){
 	}
 
 	function appendLog(item) {
+		console.log(item);
 		var log = document.createElement('div');
-		log.className = 'log';
+		log.className = 'log '+item.type;
 		if(item.cardid) {
 			var card = cardCache[item.cardid];
 			var avatar = document.createElement('div');
@@ -178,7 +185,7 @@ window.onload = function(){
 			avatar.style.backgroundImage = 'url('+ (card && card.avatar ? card.avatar : 'img/user.png') +')';
 			log.appendChild(avatar);
 			var logName = document.createElement('div');
-			logName.textContent = (card ? card.name : 'UNKNOWN') + ' (' + item.cardid+' level:'+item.level+')';
+			logName.textContent = (card ? card.name : 'UNKNOWN') + ' (' + item.cardid+' Level:'+item.level+')';
 			log.appendChild(logName);
 			log.onclick = function() {
 				updateDetails(item.cardid);
@@ -189,9 +196,10 @@ window.onload = function(){
 		log.appendChild(logText);
  		if(item.type === 'LEVEL') {
 			var logLevel = document.createElement('div');
-			logLevel.textContent = '(level '+item.level+')';
+			logLevel.textContent = '(Level '+item.level+')';
 			log.appendChild(logLevel);
 		}
+		log.appendChild(document.createElement('span'));
 		logsDiv.insertBefore(log, logsDiv.firstChild);
 	}
 
@@ -254,6 +262,17 @@ window.onload = function(){
 	addBtn.onclick = function() {
 		console.log('Add button');
 		updateDetails(null, true);
+	};
+
+	openBtn.onclick = function() {
+		console.log('Open');
+		socket.emit('open');
+	};
+
+	currentLevel.onchange = function() {
+		var newLevel = currentLevel.value;
+		console.log('Change level:', newLevel);
+		socket.emit('level',newLevel);
 	};
 
 	reset();

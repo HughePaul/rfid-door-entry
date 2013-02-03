@@ -40,6 +40,8 @@ io.sockets.on('connection', function (socket) {
 		cards.getLog(10,function(err, items){
 			if(!err) { socket.emit('logs', items); }
 		});
+
+		socket.emit('level', cards.level);
 	}
 
 	// check auth cookie
@@ -75,8 +77,15 @@ io.sockets.on('connection', function (socket) {
 		}
 	};
 
+	var levelHandler = function(level) {
+		if(socket.authed) {
+			socket.emit('level', level);
+		}
+	};
+
 	cards.on('log', logHandler);
 	cards.on('card', cardHandler);
+	cards.on('level', levelHandler);
 
 	socket.on('disconnect', function () {
 		console.log('disconnect');
@@ -88,6 +97,16 @@ io.sockets.on('connection', function (socket) {
 		console.log('card update', id, data);
 		if(!socket.authed) { return socket.emit('noauth'); }
 	    cards.updateCard(id, data);
+	});
+
+	socket.on('level', function (level) {
+		if(!socket.authed) { return socket.emit('noauth'); }
+	    cards.setLevel(level);
+	});
+
+	socket.on('open', function (level) {
+		if(!socket.authed) { return socket.emit('noauth'); }
+	    cards.activate();
 	});
 
 });

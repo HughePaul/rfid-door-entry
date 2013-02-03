@@ -8,8 +8,10 @@
 </head>
 <body>
 	<div id="buttons">
-		<button id="addBtn">Add card</button>
-		<button id="removeBtn">Remove card</button>
+		<button id="addBtn">Add Card</button>
+		<button id="removeBtn">Remove Card</button>
+		<span>Level:</span><input type="number" min="1" max="15" id="currentLevel" />
+		<button id="openBtn">Open Door</button>
 	</div>
 	<div id="cards"></div>
 	<div id="details">
@@ -18,7 +20,7 @@
 		<div><span>Level:</span><input type="number" min="1" max="15" id="cardlevel" /></div>
 		<div><span>Card Id:</span><input type="text" id="cardid" /></div>
 		<div><span>Avatar URL:</span><input type="url" id="cardavatar" /></div>
-		<textarea id="cardnotes" rows="2" cols="40"></textarea>
+		<textarea id="cardnotes" rows="2" cols="50"></textarea>
 		<button id="saveBtn">Save</button>
 	</div>
 	<div id="log"></div>

@@ -144,9 +144,8 @@ input, textarea {
 	height: 0;
 }
 .log .timestamp {
-	position: absolute;
 	float: right;
-	right: 5px;
+	padding-right: 3px;
 }
 
 .avatar {

@@ -122,6 +122,16 @@ input, textarea {
 	background-color: #eef;
 }
 
+.log.STARTUP {
+	background-color: #f8f;
+}
+.log.ERROR {
+	background-color: #f33;
+	color: white;
+}
+.log.LEVEL {
+	background-color: #f8f;
+}
 .log.NOACCESS {
 	background-color: #f88;
 }
@@ -146,6 +156,7 @@ input, textarea {
 .log .timestamp {
 	float: right;
 	padding-right: 3px;
+	color: #444;
 }
 
 .avatar {

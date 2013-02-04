@@ -1,8 +1,8 @@
 
 var config = require('./config');
 
+var fs = require('file');
 var crypto = require('crypto');
-var http = require('http');
 var connect = require('connect');
 var socketio = require('socket.io');
 
@@ -16,7 +16,15 @@ var app = connect.createServer(
 );
 
 // create http server
-var server = http.createServer(app);
+var server;
+if(config.ssl) {
+	server = require('https').createServer({
+		key: fs.readFileSync(config.ssl.key),
+		cert: fs.readFileSync(config.ssl.cert)
+	}, app);
+} else {
+	server = require('http').createServer(app);
+}
 
 // listen for sockets
 var io = socketio.listen(server);

@@ -270,15 +270,17 @@ function Cards(config) {
 		});
 
 	this.activate = function(loggedInUsername, cb) {
+		var that = this;
 		this.reader.activate(function(){
-			this.addLog({type: 'OPENED', desc:'Door opened by '+loggedInUsername});
+			that.addLog({type: 'OPENED', desc:'Door opened by '+loggedInUsername});
 			if(cb){ cb(loggedInUsername); }
 		});
 	};
 
 	this.setLevel = function(level, loggedInUsername, cb) {
+		var that = this;
 		this.reader.setLevel(level, function(level){
-			this.addLog({type: 'LEVEL', desc:'Security level changed by '+loggedInUsername, level:level});
+			that.addLog({type: 'LEVEL', desc:'Security level changed by '+loggedInUsername, level:level});
 			if(cb){ cb(level, loggedInUsername); }
 		});
 	};

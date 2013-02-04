@@ -209,7 +209,7 @@ window.onload = function(){
 
 		// log text
 		var logText = document.createElement('div');
-		log.className = 'text';
+		logText.className = 'text';
 		log.appendChild(logText);
 
 		var logTextDesc = document.createElement('div');

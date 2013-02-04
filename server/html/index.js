@@ -279,7 +279,7 @@ window.onload = function(){
 	};
 
 	removeBtn.onclick = function() {
-		if(currentCardId) {
+		if(currentCardId && confirm('Are you sure you want to remove this card?')) {
 			console.log('Remove:', currentCardId);
 			socket.emit('card', currentCardId);
 		}
@@ -291,8 +291,10 @@ window.onload = function(){
 	};
 
 	openBtn.onclick = function() {
-		console.log('Open');
-		socket.emit('open');
+		if(confirm('Are you sure you want to open the door?')) {
+			console.log('Open');
+			socket.emit('open');
+		}
 	};
 
 	currentLevel.onchange = function() {

@@ -205,27 +205,27 @@ window.onload = function(){
 		var logTextType = document.createElement('span');
 		logTextType.className = 'type';
 		logTextType.textContent = item.type;
+		log.appendChild(logTextType);
+
+		var logText = document.createElement('div');
+		log.appendChild(logText);
 
 		var logTextDesc = document.createElement('span');
 		logTextDesc.className = 'desc';
 		logTextDesc.textContent = item.desc;
-
-		var logText = document.createElement('div');
-		logText.appendChild(logTextType);
 		logText.appendChild(logTextDesc);
-		log.appendChild(logText);
 
 		if(card) {
 			var logName = document.createElement('div');
 			logName.textContent = (card ? card.name : 'UNKNOWN') + ' (' + item.cardid+' Level:'+item.level+')';
-			log.appendChild(logName);
+			logText.appendChild(logName);
 		}
 
 		// log level
  		if(item.level) {
 			var logLevel = document.createElement('div');
 			logLevel.textContent = '(Level '+item.level+')';
-			log.appendChild(logLevel);
+			logText.appendChild(logLevel);
 		}
 
 		// clear floats

@@ -147,9 +147,10 @@ button:hover {
 }
 
 .log .type {
-	min-width: 100px;
+	min-width: 90px;
 	padding-right: 5px;
 	font-weight: bold;
+	display: inline-block;
 }
 .log .desc {
 

@@ -143,6 +143,9 @@ input, textarea {
 	clear: left;
 	height: 0;
 }
+.log .timestamp {
+	float: right;
+}
 
 .avatar {
 	border: solid 1px #888;

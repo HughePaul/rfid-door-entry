@@ -182,6 +182,12 @@ window.onload = function(){
 		console.log(item);
 		var log = document.createElement('div');
 		log.className = 'log '+item.type;
+
+		var timestamp = document.createElement('p');
+		timestamp.className = 'timestamp';
+		timestamp.textContent = item.timestamp;
+		log.appendChild(timestamp);
+
 		if(item.cardid) {
 			var card = cardCache[item.cardid];
 			var avatar = document.createElement('div');

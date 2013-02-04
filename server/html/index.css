@@ -1,11 +1,10 @@
 
 body, div, p, li, a, input, textarea {
 	font-family: helvetica, arial, sans-serif;
-	color: black;
 }
-
 body {
 	background-color: #777;
+	color: black;
 }
 body > div {
 	border: solid 1px black;

@@ -128,6 +128,9 @@ input, textarea {
 .log.ACCESS {
 	background-color: #8f8;
 }
+.log.OPENED {
+	background-color: #ff8;
+}
 .log.REMOVED {
 	background-color: #fdd;
 }

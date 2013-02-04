@@ -222,7 +222,6 @@ Reader.prototype.activate = function(cb) {
 	if(typeof cb === 'function') {
 		this.once('activate', cb);
 	}
-	console.log('Open Door');
 	this.write('O');
 };
 

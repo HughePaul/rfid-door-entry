@@ -262,6 +262,10 @@ function Cards(config) {
 			that.level = level;
 			that.addLog({type: 'LEVEL', desc: 'Security Level', level: level});
 			that.emit('level', level);
+		})
+		.on('activate', function(){
+			that.level = level;
+			that.addLog({type: 'OPENED', desc: 'Door Opened'});
 		});
 
 	this.activate = function(cb) {

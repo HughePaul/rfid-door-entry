@@ -123,14 +123,12 @@ button:hover {
 }
 
 .log.STARTUP {
-	background-color: #f8f;
+	background-color: #ff3;
+	color: white;
 }
 .log.ERROR {
 	background-color: #f33;
 	color: white;
-}
-.log.LEVEL {
-	background-color: #f8f;
 }
 .log.NOACCESS {
 	background-color: #f88;

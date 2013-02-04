@@ -218,14 +218,17 @@ window.onload = function(){
 
 		if(card) {
 			var logName = document.createElement('div');
-			logName.textContent = (card ? card.name : 'UNKNOWN') + ' (' + item.cardid+' Level:'+item.level+')';
+			logName.textContent = (card ? card.name : 'UNKNOWN');
 			logText.appendChild(logName);
+			var logCard = document.createElement('div');
+			logCard.textContent = 'Card ID: '+item.cardid;
+			logText.appendChild(logCard);
 		}
 
 		// log level
  		if(item.level) {
 			var logLevel = document.createElement('div');
-			logLevel.textContent = '(Level '+item.level+')';
+			logLevel.textContent = 'Level: '+item.level;
 			logText.appendChild(logLevel);
 		}
 

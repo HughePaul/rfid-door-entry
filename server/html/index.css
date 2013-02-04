@@ -10,6 +10,12 @@ body > div {
 	border: solid 1px black;
 }
 
+.clear {
+	display: block;
+	clear: both;
+	height: 0;
+}
+
 input, textarea {
 	font-size: 17px;
 	padding: 3px;
@@ -158,11 +164,6 @@ button:hover {
 	float: left;
 }
 
-.log .clear {
-	display: block;
-	clear: left;
-	height: 0;
-}
 .log .timestamp {
 	float: right;
 	padding-right: 3px;

@@ -145,6 +145,10 @@ window.onload = function(){
 		detail.className = 'cardsDetail';
 		detail.textContent = id+' Level '+card.level;
 		cardDiv.appendChild(detail);
+
+		var clear = document.createElement('div');
+		clear.className = 'clear';
+		cardDiv.appendChild(clear);
 	}
 
 	function showLogin() {
@@ -219,20 +223,24 @@ window.onload = function(){
 			logCard.appendChild(avatar);
 
 			var logCardName = document.createElement('div');
-			logCardName.textContent = 'Name: '+(card ? card.name : 'UNKNOWN CARD');
+			logCardName.textContent = (card ? card.name : 'UNKNOWN CARD');
 			logCard.appendChild(logCardName);
 			var logCardId = document.createElement('div');
-			logCardId.textContent = 'Card ID: '+item.cardid;
+			logCardId.textContent = item.cardid;
 			logCard.appendChild(logCardId);
 			var logCardLevel = document.createElement('div');
-			logCardLevel.textContent = 'Level: '+item.level;
+			logCardLevel.textContent = 'Level '+item.level;
 			logCard.appendChild(logCardLevel);
+
+			var cardClear = document.createElement('div');
+			cardClear.className = 'clear';
+			logCard.appendChild(cardClear);
 		}
 
 		// log level
  		else if(item.level) {
 			var logLevel = document.createElement('div');
-			logLevel.textContent = 'Level: '+item.level;
+			logLevel.textContent = 'Level '+item.level;
 			logText.appendChild(logLevel);
 		}
 

@@ -117,12 +117,12 @@ io.sockets.on('connection', function (socket) {
 	socket.on('card', function (id, data) {
 		console.log('card update', id, data);
 		if(!socket.authed) { return socket.emit('noauth'); }
-	    cards.updateCard(id, data, loggedInUsername);
+	    cards.updateCard(id, data);
 	});
 
 	socket.on('level', function (level) {
 		if(!socket.authed) { return socket.emit('noauth'); }
-	    cards.setLevel(level, loggedInUsername);
+	    cards.setLevel(level);
 	});
 
 	socket.on('open', function (level) {

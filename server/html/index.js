@@ -189,32 +189,40 @@ window.onload = function(){
 		log.appendChild(timestamp);
 
 		// cardid and avatar
-		if(item.cardid) {
-			var card = cardCache[item.cardid];
+		var card = cardCache[item.cardid];
+		if(card) {
 			var avatar = document.createElement('div');
 			avatar.className = 'avatar';
 			avatar.style.backgroundImage = 'url('+ (card && card.avatar ? card.avatar : 'img/user.png') +')';
 			log.appendChild(avatar);
-			var logName = document.createElement('div');
-			logName.textContent = (card ? card.name : 'UNKNOWN') + ' (' + item.cardid+' Level:'+item.level+')';
-			log.appendChild(logName);
+
 			log.onclick = function() {
 				updateDetails(item.cardid);
 			};
 		}
+
 		// log text
-		var logText = document.createElement('div');
 		var logTextType = document.createElement('span');
 		logTextType.className = 'type';
 		logTextType.textContent = item.type;
-		logText.appendChild(logTextType);
+
 		var logTextDesc = document.createElement('span');
 		logTextDesc.className = 'desc';
-		logText.textContent = item.desc;
+		logTextDesc.textContent = item.desc;
+
+		var logText = document.createElement('div');
+		logText.appendChild(logTextType);
 		logText.appendChild(logTextDesc);
 		log.appendChild(logText);
+
+		if(card) {
+			var logName = document.createElement('div');
+			logName.textContent = (card ? card.name : 'UNKNOWN') + ' (' + item.cardid+' Level:'+item.level+')';
+			log.appendChild(logName);
+		}
+
 		// log level
- 		if(item.type === 'LEVEL') {
+ 		if(item.level) {
 			var logLevel = document.createElement('div');
 			logLevel.textContent = '(Level '+item.level+')';
 			log.appendChild(logLevel);

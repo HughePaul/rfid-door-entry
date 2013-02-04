@@ -1,7 +1,7 @@
 
 var config = require('./config');
 
-var fs = require('file');
+var fs = require('fs');
 var crypto = require('crypto');
 var connect = require('connect');
 var socketio = require('socket.io');

@@ -77,7 +77,7 @@ function Cards(config) {
 		return this;
 	};
 
-	this.updateCard = function(id, details) {
+	this.updateCard = function(id, details, loggedInUsername) {
 		// if no details given then remove card
 		if(!details) {
 			return this.removeCard(id);
@@ -261,19 +261,26 @@ function Cards(config) {
 		})
 		.on('level', function(level){
 			that.level = level;
-			that.addLog({type: 'LEVEL', desc: 'Security Level', level: level});
+//			that.addLog({type: 'LEVEL', desc: 'Security Level', level: level});
 			that.emit('level', level);
 		})
 		.on('activate', function(){
-			that.addLog({type: 'OPENED', desc: 'Door Opened'});
+//			that.addLog({type: 'OPENED', desc: 'Door Opened'});
+			that.emit('opened');
 		});
 
-	this.activate = function(cb) {
-		this.reader.activate(cb);
+	this.activate = function(loggedInUsername, cb) {
+		this.reader.activate(function(){
+			this.addLog({type: 'OPENED', desc:'Door opened by '+loggedInUsername});
+			if(cb){ cb(loggedInUsername); }
+		});
 	};
 
-	this.setLevel = function(level, cb) {
-		this.reader.setLevel(level, cb);
+	this.setLevel = function(level, loggedInUsername, cb) {
+		this.reader.setLevel(level, function(level){
+			this.addLog({type: 'LEVEL', desc:'Security level changed by '+loggedInUsername, level:level});
+			if(cb){ cb(level, loggedInUsername); }
+		});
 	};
 
 	this.addLog({type: 'STARTUP', desc:'Server started'});

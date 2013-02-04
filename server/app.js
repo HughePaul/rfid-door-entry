@@ -39,6 +39,8 @@ function userCookie(username) {
 io.sockets.on('connection', function (socket) {
 	socket.authed = false;
 
+	var loggedInUsername = '';
+
 	function init() {
 		// return whole database
 		cards.getCards(function(err, cards){
@@ -59,6 +61,7 @@ io.sockets.on('connection', function (socket) {
 		socket.authed = (testCookie && cookie && testCookie === cookie);
 		if(!socket.authed) { return socket.emit('noauth'); }
 		socket.emit('auth', username, cookie);
+		loggedInUsername = username;
 		init();
 	});
 
@@ -70,6 +73,7 @@ io.sockets.on('connection', function (socket) {
 		if(!socket.authed) { return socket.emit('noauth'); }
 		// set up cookie
 		socket.emit('auth', username, userCookie(username));
+		loggedInUsername = username;
 		init();
 	});
 
@@ -91,31 +95,40 @@ io.sockets.on('connection', function (socket) {
 		}
 	};
 
+	var openedHandler = function() {
+		if(socket.authed) {
+			socket.emit('opened');
+		}
+	};
+
 	cards.on('log', logHandler);
 	cards.on('card', cardHandler);
 	cards.on('level', levelHandler);
+	cards.on('opened', openedHandler);
 
 	socket.on('disconnect', function () {
 		console.log('disconnect');
 		cards.removeListener('log',logHandler);
 		cards.removeListener('card', cardHandler);
+		cards.removeListener('level', levelHandler);
+		cards.removeListener('opened', openedHandler);
 	});
 
 	socket.on('card', function (id, data) {
 		console.log('card update', id, data);
 		if(!socket.authed) { return socket.emit('noauth'); }
-	    cards.updateCard(id, data);
+	    cards.updateCard(id, data, loggedInUsername);
 	});
 
 	socket.on('level', function (level) {
 		if(!socket.authed) { return socket.emit('noauth'); }
-	    cards.setLevel(level);
+	    cards.setLevel(level, loggedInUsername);
 	});
 
 	socket.on('open', function (level) {
 		if(!socket.authed) { return socket.emit('noauth'); }
 		try{
-		    cards.activate();
+		    cards.activate(loggedInUsername);
 		} catch(e) {
 			console.error(e);
 			socket.emit('error',e.message);

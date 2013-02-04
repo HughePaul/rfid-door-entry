@@ -202,16 +202,16 @@ window.onload = function(){
 		}
 
 		// log text
-		var logTextType = document.createElement('span');
-		logTextType.className = 'type';
-		logTextType.textContent = item.type;
-		log.appendChild(logTextType);
+		var logType = document.createElement('div');
+		logType.className = 'type';
+		logType.textContent = item.type;
+		log.appendChild(logType);
 
 		var logText = document.createElement('div');
+		log.className = 'text';
 		log.appendChild(logText);
 
-		var logTextDesc = document.createElement('span');
-		logTextDesc.className = 'desc';
+		var logTextDesc = document.createElement('div');
 		logTextDesc.textContent = item.desc;
 		logText.appendChild(logTextDesc);
 
@@ -229,7 +229,7 @@ window.onload = function(){
 		}
 
 		// clear floats
-		var clear = document.createElement('span');
+		var clear = document.createElement('div');
 		clear.className = 'clear';
 		log.appendChild(clear);
 

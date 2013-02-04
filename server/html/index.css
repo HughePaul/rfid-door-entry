@@ -151,9 +151,11 @@ button:hover {
 	padding-right: 5px;
 	font-weight: bold;
 	display: inline-block;
+	float: left;
 }
-.log .desc {
-
+.log .text {
+	display: inline-block;
+	float: left;
 }
 
 .log .clear {

@@ -164,7 +164,7 @@ button:hover {
 .log .text {
 	display: inline-block;
 	float: left;
-	min-height: 225px;
+	min-width: 225px;
 }
 
 .log .timestamp {

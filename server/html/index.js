@@ -204,7 +204,14 @@ window.onload = function(){
 		}
 		// log text
 		var logText = document.createElement('div');
-		logText.textContent = item.type+' '+item.desc;
+		var logTextType = document.createElement('span');
+		logTextType.className = 'type';
+		logTextType.textContent = item.type;
+		logText.appendChild(logTextType);
+		var logTextDesc = document.createElement('span');
+		logTextDesc.className = 'desc';
+		logText.textContent = item.desc;
+		logText.appendChild(logTextDesc);
 		log.appendChild(logText);
 		// log level
  		if(item.type === 'LEVEL') {

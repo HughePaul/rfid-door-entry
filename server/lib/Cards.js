@@ -44,6 +44,7 @@ function Cards(config) {
 	});
 
 	this.addLog = function(item) {
+		item.timestamp = new Date().toISOString().replace('T',' ').replace(/\..*$/,'');
 		db.run("INSERT INTO log (timestamp, type, desc, cardid, level) VALUES (datetime('now'),?,?,?,?)", [
 			item.type,
 			item.desc,

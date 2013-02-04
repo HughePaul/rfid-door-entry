@@ -119,6 +119,7 @@ button:hover {
 	-webkit-box-shadow: 0 1px 5px #888;
 	box-shadow: 0 1px 5px #888;	
 	background-color: #eef;
+	padding-left: 5px;
 }
 
 .log.STARTUP {
@@ -143,6 +144,15 @@ button:hover {
 }
 .log.ADDED {
 	background-color: #dfd;
+}
+
+.log .type {
+	min-width: 100px;
+	padding-right: 5px;
+	font-weight: bold;
+}
+.log .desc {
+
 }
 
 .log .clear {

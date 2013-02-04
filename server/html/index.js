@@ -183,11 +183,12 @@ window.onload = function(){
 		var log = document.createElement('div');
 		log.className = 'log '+item.type;
 
-		var timestamp = document.createElement('p');
+		var timestamp = document.createElement('span');
 		timestamp.className = 'timestamp';
 		timestamp.textContent = item.timestamp;
 		log.appendChild(timestamp);
 
+		// cardid and avatar
 		if(item.cardid) {
 			var card = cardCache[item.cardid];
 			var avatar = document.createElement('div');
@@ -201,15 +202,23 @@ window.onload = function(){
 				updateDetails(item.cardid);
 			};
 		}
+		// log text
 		var logText = document.createElement('div');
 		logText.textContent = item.type+' '+item.desc;
 		log.appendChild(logText);
+		// log level
  		if(item.type === 'LEVEL') {
 			var logLevel = document.createElement('div');
 			logLevel.textContent = '(Level '+item.level+')';
 			log.appendChild(logLevel);
 		}
-		log.appendChild(document.createElement('span'));
+
+		// clear floats
+		var clear = document.createElement('span');
+		clear.className = 'clear';
+		log.appendChild(clear);
+
+		// append log entry
 		logsDiv.insertBefore(log, logsDiv.firstChild);
 	}
 

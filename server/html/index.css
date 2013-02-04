@@ -138,13 +138,15 @@ input, textarea {
 	background-color: #dfd;
 }
 
-.log span {
+.log .clear {
 	display: block;
 	clear: left;
 	height: 0;
 }
 .log .timestamp {
+	position: absolute;
 	float: right;
+	right: 5px;
 }
 
 .avatar {

@@ -264,7 +264,6 @@ function Cards(config) {
 			that.emit('level', level);
 		})
 		.on('activate', function(){
-			that.level = level;
 			that.addLog({type: 'OPENED', desc: 'Door Opened'});
 		});
 

@@ -188,24 +188,13 @@ window.onload = function(){
 		timestamp.textContent = item.timestamp;
 		log.appendChild(timestamp);
 
+		var card = cardCache[item.cardid];
+
 		// log type
 		var logType = document.createElement('div');
 		logType.className = 'type';
 		logType.textContent = item.type;
 		log.appendChild(logType);
-
-		// cardid and avatar
-		var card = cardCache[item.cardid];
-		if(card) {
-			var avatar = document.createElement('div');
-			avatar.className = 'avatar';
-			avatar.style.backgroundImage = 'url('+ (card && card.avatar ? card.avatar : 'img/user.png') +')';
-			log.appendChild(avatar);
-
-			log.onclick = function() {
-				updateDetails(item.cardid);
-			};
-		}
 
 		// log text
 		var logText = document.createElement('div');
@@ -217,8 +206,18 @@ window.onload = function(){
 		logText.appendChild(logTextDesc);
 
 		if(card) {
+			log.onclick = function() {
+				updateDetails(item.cardid);
+			};
+
+			// cardid and avatar
+			var avatar = document.createElement('div');
+			avatar.className = 'avatar';
+			avatar.style.backgroundImage = 'url('+ (card && card.avatar ? card.avatar : 'img/user.png') +')';
+			logText.appendChild(avatar);
+
 			var logName = document.createElement('div');
-			logName.textContent = (card ? card.name : 'UNKNOWN');
+			logName.textContent = 'Name: '+(card ? card.name : 'UNKNOWN CARD');
 			logText.appendChild(logName);
 			var logCard = document.createElement('div');
 			logCard.textContent = 'Card ID: '+item.cardid;

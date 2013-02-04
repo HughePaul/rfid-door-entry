@@ -78,6 +78,7 @@ function Cards(config) {
 	};
 
 	this.updateCard = function(id, details, loggedInUsername) {
+		var result = false;
 		// if no details given then remove card
 		if(!details) {
 			return this.removeCard(id);
@@ -109,6 +110,7 @@ function Cards(config) {
 						if(err) { console.error('Cards:db:cards:insert',err); }
 					});
 					card = {};
+					result = true;
 				}
 				// update record with details
 				console.log('Update card in database', id);
@@ -129,10 +131,11 @@ function Cards(config) {
 				});
 			});
 		});
-		return this;
+		return result;
 	};
 
 	this.removeCard = function(id) {
+		var result = false;
 		db.serialize(function() {
 			console.log('Remove card from database', id);
 			db.run("DELETE FROM cards WHERE id = $id", { $id: id }, function(err) {
@@ -144,11 +147,12 @@ function Cards(config) {
 				console.log('Remove card from reader', id);
 				this.reader.remove(id);
 			}
+			result = true;
 		} catch(e) {
 			console.error('Reader error:', e);
 		}
 		this.emit('card', id);
-		return this;
+		return result;
 	};
 
 	this.getCards = function(cb) {
@@ -252,12 +256,16 @@ function Cards(config) {
 			that.addLog({type: 'NOACCESS', desc: 'Access denied', cardid: id, level: 0});
 		})
 		.on('add', function(id, level){
-			that.addLog({type: 'ADDED', desc: 'Added card', cardid: id, level: level});
-			that.updateCard(id, {level: level});
+			if(that.updateCard(id, {level: level})) {
+				that.addLog({type: 'ADDED', desc: 'Added card', cardid: id, level: level});
+			} else {
+				that.addLog({type: 'UPDATED', desc: 'Updated card', cardid: id, level: level});
+			}
 		})
 		.on('remove', function(id, level){
-			that.addLog({type: 'REMOVED', desc: 'Removed card', cardid: id, level: level});
-			that.updateCard(id, {level: 0});
+			if(that.updateCard(id, {level: 0})) {
+				that.addLog({type: 'REMOVED', desc: 'Removed card', cardid: id, level: level});
+			}
 		})
 		.on('level', function(level){
 			that.level = level;

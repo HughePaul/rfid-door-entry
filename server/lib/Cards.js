@@ -77,11 +77,10 @@ function Cards(config) {
 		return this;
 	};
 
-	this.updateCard = function(id, details, loggedInUsername) {
-		var result = false;
+	this.updateCard = function(id, details, cb) {
 		// if no details given then remove card
 		if(!details) {
-			return this.removeCard(id);
+			return this.removeCard(id, cb);
 		}
 
 		try {
@@ -100,7 +99,7 @@ function Cards(config) {
 			if(err) { return console.error('Cards:db:',err); }
 
 			db.serialize(function() {
-
+				var isNew = false;
 				if(!card) {
 					// if level is zero and no card then it was removed
 					if(!details.level) { return; }
@@ -109,50 +108,63 @@ function Cards(config) {
 					db.run("INSERT INTO cards (id) VALUES ($id)", { $id: id }, function(err) {
 						if(err) { console.error('Cards:db:cards:insert',err); }
 					});
-					card = {};
-					result = true;
+					card = { id: id };
+					isNew = true;
 				}
 				// update record with details
 				console.log('Update card in database', id);
+
+				card.level = details.level || card.level || 0;
+				card.name =	details.name || card.name || 'UNKNOWN';
+				card.avatar = details.avatar || card.avatar || '';
+				card.notes = details.notes || card.notes || '';
+
 				db.run("UPDATE cards SET level = $level, name = $name, modified = datetime('now'), avatar = $avatar, notes = $notes WHERE id = $id", {
 					$id: id,
-					$level: details.level || card.level || 0,
-					$name: details.name || card.name || 'UNKNOWN',
-					$avatar: details.avatar || card.avatar || '',
-					$notes: details.notes || card.notes || ''
+					$level: card.level,
+					$name: card.name,
+					$avatar: card.avatar,
+					$notes: card.notes
 				}, function(err) {
 					if(err) { return console.error('Cards:db:cards:update',err); }
 
+					if(cb){ cb(id, card); }
+
 					// get card back from the db and send to everyone as an update
 					that.getCard(id, function(err, card) {
-						if(!err) { that.emit('card', id, card); }
+						if(!err) {
+							that.emit('card', id, card, isNew);
+						}
 					});
 
 				});
 			});
 		});
-		return result;
+		return this;
 	};
 
-	this.removeCard = function(id) {
-		var result = false;
-		db.serialize(function() {
-			console.log('Remove card from database', id);
-			db.run("DELETE FROM cards WHERE id = $id", { $id: id }, function(err) {
-				if(err) { console.error('Cards:db:',err); }
+	this.removeCard = function(id, cb) {
+		this.getCard(id, function(err, card) {
+			if(err) { return console.error('Cards:db:',err); }
+
+			db.serialize(function() {
+				console.log('Remove card from database', id);
+				db.run("DELETE FROM cards WHERE id = $id", { $id: id }, function(err) {
+					if(err) { console.error('Cards:db:',err); }
+				});
 			});
-		});
-		try {
-			if(this.reader.cards[id]) {
-				console.log('Remove card from reader', id);
-				this.reader.remove(id);
+			try {
+				if(this.reader.cards[id]) {
+					console.log('Remove card from reader', id);
+					this.reader.remove(id);
+				}
+				if(cb) { cb(id, card); }
+			} catch(e) {
+				console.error('Reader error:', e);
 			}
-			result = true;
-		} catch(e) {
-			console.error('Reader error:', e);
-		}
-		this.emit('card', id);
-		return result;
+			this.emit('card', id);
+		});
+		return this;
 	};
 
 	this.getCards = function(cb) {
@@ -256,16 +268,14 @@ function Cards(config) {
 			that.addLog({type: 'NOACCESS', desc: 'Access denied', cardid: id, level: 0});
 		})
 		.on('add', function(id, level){
-			if(that.updateCard(id, {level: level})) {
-				that.addLog({type: 'ADDED', desc: 'Added card', cardid: id, level: level});
-			} else {
-				that.addLog({type: 'UPDATED', desc: 'Updated card', cardid: id, level: level});
-			}
+			that.updateCard(id, {level: level}, function(id, card, isNew){
+				that.addLog({type: isNew?'ADDED':'UPDATED', desc: JSON.stringify(card), cardid: id, level: card.level});
+			});
 		})
 		.on('remove', function(id, level){
-			if(that.updateCard(id, {level: 0})) {
-				that.addLog({type: 'REMOVED', desc: 'Removed card', cardid: id, level: level});
-			}
+			that.updateCard(id, {level: 0}, function(id, card){
+				that.addLog({type: 'REMOVED', desc: JSON.stringify(card), cardid: id, level: card.level});
+			});
 		})
 		.on('level', function(level){
 			that.level = level;

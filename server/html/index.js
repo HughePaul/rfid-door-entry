@@ -196,8 +196,6 @@ window.onload = function(){
 		timestamp.textContent = item.timestamp;
 		log.appendChild(timestamp);
 
-		var card = cardCache[item.cardid];
-
 		// log type
 		var logType = document.createElement('div');
 		logType.className = 'type';
@@ -208,15 +206,23 @@ window.onload = function(){
 		var logText = document.createElement('div');
 		logText.className = 'text';
 
-		var logTextDesc = document.createElement('div');
-		logTextDesc.textContent = item.desc;
-		logText.appendChild(logTextDesc);
+		var card = cardCache[item.cardid];
 
 		if(card) {
 			log.onclick = function() {
 				updateDetails(item.cardid);
 			};
+		}
 
+		if(item.type === 'ADDED' || item.type === 'UPDATED' || item.type === 'REMOVED') {
+			try {
+				var jsonCard = JSON.parse(item.desc);
+				if(jsonCard) { card = jsonCard; }
+			} catch(e) {
+			}
+		}
+
+		if(card) {
 			var logCard = document.createElement('div');
 			logCard.className = 'card';
 			logText.appendChild(logCard);
@@ -241,11 +247,18 @@ window.onload = function(){
 			logCard.appendChild(cardClear);
 		}
 
-		// log level
- 		else if(item.level) {
-			var logLevel = document.createElement('div');
-			logLevel.textContent = 'Level '+item.level;
-			logText.appendChild(logLevel);
+		else {
+			var logTextDesc = document.createElement('div');
+			logTextDesc.textContent = item.desc;
+			logText.appendChild(logTextDesc);
+
+			// log level
+	 		if(item.level) {
+				var logLevel = document.createElement('div');
+				logLevel.textContent = 'Level '+item.level;
+				logText.appendChild(logLevel);
+			}
+
 		}
 
 		log.appendChild(logText);

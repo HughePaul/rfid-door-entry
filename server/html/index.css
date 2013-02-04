@@ -1,6 +1,8 @@
 
 body, div, p, li, a, input, textarea {
 	font-family: helvetica, arial, sans-serif;
+	font-size: 14px;
+	line-height: 17px;
 }
 body {
 	background-color: #777;
@@ -101,7 +103,7 @@ button:hover {
 
 
 .card {
-	height: 52px;
+	min-height: 52px;
 	margin-top: 2px;
 	border: solid 1px #888;
 	border-radius: 5px;
@@ -162,6 +164,7 @@ button:hover {
 .log .text {
 	display: inline-block;
 	float: left;
+	min-height: 225px;
 }
 
 .log .timestamp {

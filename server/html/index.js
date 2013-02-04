@@ -143,7 +143,11 @@ window.onload = function(){
 		cardDiv.appendChild(name);
 		var detail = document.createElement('div');
 		detail.className = 'cardsDetail';
-		detail.textContent = id+' Level '+card.level;
+		detail.textContent = id;
+		cardDiv.appendChild(detail);
+		detail = document.createElement('div');
+		detail.className = 'cardsDetail';
+		detail.textContent = 'Level '+card.level;
 		cardDiv.appendChild(detail);
 
 		var clear = document.createElement('div');

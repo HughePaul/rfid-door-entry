@@ -188,6 +188,12 @@ window.onload = function(){
 		timestamp.textContent = item.timestamp;
 		log.appendChild(timestamp);
 
+		// log type
+		var logType = document.createElement('div');
+		logType.className = 'type';
+		logType.textContent = item.type;
+		log.appendChild(logType);
+
 		// cardid and avatar
 		var card = cardCache[item.cardid];
 		if(card) {
@@ -202,11 +208,6 @@ window.onload = function(){
 		}
 
 		// log text
-		var logType = document.createElement('div');
-		logType.className = 'type';
-		logType.textContent = item.type;
-		log.appendChild(logType);
-
 		var logText = document.createElement('div');
 		log.className = 'text';
 		log.appendChild(logText);

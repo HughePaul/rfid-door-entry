@@ -122,11 +122,11 @@ button:hover {
 }
 
 .log.STARTUP {
-	background-color: #883;
+	background-color: #f63;
 	color: white;
 }
 .log.ERROR {
-	background-color: #833;
+	background-color: #f33;
 	color: white;
 }
 .log.NOACCESS {

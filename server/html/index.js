@@ -80,7 +80,7 @@ window.onload = function(){
 	var authing = false;
 
 	function reset() {
-		updateDetails(null);
+		updateDetails();
 		removeBtn.disabled = true;
 		addBtn.disabled = true;
 		cardsDiv.innerHTML = '';
@@ -208,13 +208,9 @@ window.onload = function(){
 
 		var card = cardCache[item.cardid];
 
-		if(card) {
+		if(item.cardid) {
 			log.onclick = function() {
 				updateDetails(item.cardid);
-			};
-		} else if(item.cardid) {
-			log.onclick = function() {
-				updateDetails(null, item.cardid);
 			};
 		}
 
@@ -276,20 +272,23 @@ window.onload = function(){
 		logsDiv.insertBefore(log, logsDiv.firstChild);
 	}
 
-	function updateDetails(id, newCardId) {
-		var card = cardCache[id];
-		currentCardId = card ? id : (newCardId || '');
+	function updateDetails(id) {
 
+		var disable = id === undefined;
+
+		currentCardId = id || '';
+
+		var card = cardCache[id];
 		removeBtn.disabled = !card;
 
-		if(!card && newCardId !== undefined) {
+		if(!card && !disable) {
 			card = {};
 		}
 
 		cardAvatarImg.style.backgroundImage = 'url('+ (card && card.avatar ? card.avatar : 'img/user.png') +')';
 		cardId.value = currentCardId;
 		cardName.value = card && card.name !== undefined ? card.name : '';
-		cardLevel.value = card && card.level !== undefined ? card.level : '7';
+		cardLevel.value = card && card.level !== undefined ? card.level : currentLevel.value;
 		cardAvatar.value = card && card.avatar !== undefined ? card.avatar : '';
 		cardNotes.value = card && card.notes !== undefined ? card.notes : '';
 
@@ -298,7 +297,7 @@ window.onload = function(){
 		cardName.disabled =
 		cardLevel.disabled =
 		cardAvatar.disabled =
-		cardNotes.disabled = card ? false : true;
+		cardNotes.disabled = disable;
 	}
 
 	cardAvatar.onchange = function() {
@@ -334,7 +333,7 @@ window.onload = function(){
 
 	addBtn.onclick = function() {
 		console.log('Add button');
-		updateDetails(null, '');
+		updateDetails(null);
 	};
 
 	openBtn.onclick = function() {

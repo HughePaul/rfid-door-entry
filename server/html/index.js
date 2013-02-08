@@ -212,6 +212,10 @@ window.onload = function(){
 			log.onclick = function() {
 				updateDetails(item.cardid);
 			};
+		} else if(item.cardid) {
+			log.onclick = function() {
+				updateDetails(null, item.cardid);
+			};
 		}
 
 		if(item.type === 'ADDED' || item.type === 'UPDATED' || item.type === 'REMOVED') {
@@ -272,13 +276,13 @@ window.onload = function(){
 		logsDiv.insertBefore(log, logsDiv.firstChild);
 	}
 
-	function updateDetails(id, newCard) {
+	function updateDetails(id, newCardId) {
 		var card = cardCache[id];
-		currentCardId = card ? id : '';
+		currentCardId = card ? id : (newCardId || '');
 
 		removeBtn.disabled = !card;
 
-		if(newCard) {
+		if(!card && newCardId !== undefined) {
 			card = {};
 		}
 
@@ -330,7 +334,7 @@ window.onload = function(){
 
 	addBtn.onclick = function() {
 		console.log('Add button');
-		updateDetails(null, true);
+		updateDetails(null, '');
 	};
 
 	openBtn.onclick = function() {

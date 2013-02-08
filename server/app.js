@@ -47,7 +47,7 @@ io.sockets.on('connection', function (socket) {
 			if(!err) { socket.emit('cards', cards); }
 		});
 		// get a bunch of logs
-		cards.getLog(10,function(err, items){
+		cards.getLog(30,function(err, items){
 			if(!err) { socket.emit('logs', items); }
 		});
 

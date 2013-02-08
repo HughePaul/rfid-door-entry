@@ -116,8 +116,8 @@ function Cards(config) {
 
 				card.level = details.level || card.level || 0;
 				card.name =	details.name || card.name || 'UNKNOWN';
-				card.avatar = details.avatar || card.avatar || '';
-				card.notes = details.notes || card.notes || '';
+				card.avatar = details.avatar !== undefined || card.avatar || '';
+				card.notes = details.notes !== undefined || card.notes || '';
 
 				db.run("UPDATE cards SET level = $level, name = $name, modified = datetime('now'), avatar = $avatar, notes = $notes WHERE id = $id", {
 					$id: id,

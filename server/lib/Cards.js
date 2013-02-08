@@ -54,12 +54,14 @@ function Cards(config) {
 			if(err) { console.error('Cards:db:',err); }
 		});
 		console.log('LOG:', item);
-		this.emit('log', item);
+		if(item.type !== 'UPDATE') {
+			this.emit('log', item);
+		}
 	};
 	this.getLog = function(count, cb) {
 		if(!count) { count = 100; }
 		db.serialize(function() {
-			db.all("SELECT id, timestamp, type, desc, cardid, level FROM log ORDER BY id DESC LIMIT $count", { $count: count }, function(err, items) {
+			db.all("SELECT id, timestamp, type, desc, cardid, level FROM log WHERE type != 'UPDATE' ORDER BY id DESC LIMIT $count", { $count: count }, function(err, items) {
 				if(err) { console.error('Cards:db:',err); }
 				if(cb) { cb(err, items.reverse()); }
 			});

@@ -132,7 +132,7 @@ io.sockets.on('connection', function (socket) {
 	socket.on('level', function (level) {
 		if(!socket.authed) { return socket.emit('noauth'); }
 	    cards.setLevel(level,loggedInUsername);
-
+	});
 	socket.on('open', function (level) {
 		if(!socket.authed) { return socket.emit('noauth'); }
 		try{

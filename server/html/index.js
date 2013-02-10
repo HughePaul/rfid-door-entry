@@ -205,7 +205,7 @@ window.onload = function(){
 	}
 
 	function appendLog(item) {
-		console.log(item);
+//		console.log(item);
 		var log = document.createElement('div');
 		log.className = 'log '+item.type;
 

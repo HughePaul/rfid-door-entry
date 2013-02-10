@@ -27,6 +27,7 @@ input, textarea {
 	position: absolute;
 	top: 5px;
 	left: 5px;
+	right: 5px;
 	padding: 0px;
 	border: 0;
 	overflow: hidden;

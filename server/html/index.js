@@ -85,6 +85,7 @@ window.onload = function(){
 		removeBtn.disabled = true;
 		addBtn.disabled = true;
 		cardsDiv.innerHTML = '';
+		logsDiv.innerHTML = '';
 	}
 
 	function updateCards(cards) {
@@ -205,7 +206,6 @@ window.onload = function(){
 	}
 
 	function appendLog(item) {
-//		console.log(item);
 		var log = document.createElement('div');
 		log.className = 'log '+item.type;
 

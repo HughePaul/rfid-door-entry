@@ -45,6 +45,7 @@ window.onload = function(){
 		addBtn.disabled = false;
 		currentLevel.disabled = false;
 		openBtn.disabled = false;
+		hideLogin();
 	});
 
 	socket.on('noauth', function () {
@@ -161,22 +162,39 @@ window.onload = function(){
 		console.log('Auth required');
 
 		username.value = sessionStorage.getItem("username");
+		password.value = '';
 
 		login.style.display = 'block';
 
 		function doLogin() {
-			socket.emit('login', username.value, password.value);
+			socket.emit('login', username.value.toLowerCase(), password.value);
 		}
 		loginBtn.onclick = doLogin;
-		username.onkeypress = function(e) {
+		username.onkeypress = password.onkeypress = function(e) {
 			var code = (e.keyCode ? e.keyCode : e.which);
 			if (code === 13) {
+				if(!username.value){
+					username.focus();
+				} else if(!password.value){
+					password.focus();
+				} else {
+					doLogin();
+				}
 				e.preventDefault();
-				doLogin();
 			}
 		};
 
-		username.focus();
+		if(username.value) {
+			password.focus();
+		} else {
+			username.focus();
+		}
+	}
+
+	function hideLogin() {
+		authing = false;
+
+		login.style.display = 'none';
 	}
 
 	function appendLogs(logs) {
@@ -350,5 +368,6 @@ window.onload = function(){
 	};
 
 	reset();
+	showLogin();
 };
 

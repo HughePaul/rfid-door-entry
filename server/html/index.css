@@ -31,6 +31,9 @@ input, textarea {
 	border: 0;
 	overflow: hidden;
 }
+#logoutBtn {
+	float: right;
+}
 
 button {
 	display: inline-block;

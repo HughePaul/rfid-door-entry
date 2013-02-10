@@ -77,6 +77,15 @@ io.sockets.on('connection', function (socket) {
 		init();
 	});
 
+	// login request
+	socket.on('logout', function () {
+		console.log('logout', loggedInUsername);
+		// try login
+		socket.authed = false;
+		socket.emit('noauth');
+		loggedInUsername = '';
+	});
+
 	var logHandler = function(item) {
 		if(socket.authed) {
 			socket.emit('log', item);
@@ -122,8 +131,7 @@ io.sockets.on('connection', function (socket) {
 
 	socket.on('level', function (level) {
 		if(!socket.authed) { return socket.emit('noauth'); }
-	    cards.setLevel(level);
-	});
+	    cards.setLevel(level,loggedInUsername);
 
 	socket.on('open', function (level) {
 		if(!socket.authed) { return socket.emit('noauth'); }

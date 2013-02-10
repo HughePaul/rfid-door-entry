@@ -367,6 +367,12 @@ window.onload = function(){
 		socket.emit('level',newLevel);
 	};
 
+	logoutBtn.onclick = function() {
+		console.log('Logout');
+		socket.emit('logout');
+	};
+
+
 	reset();
 	showLogin();
 };

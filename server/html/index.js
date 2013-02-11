@@ -49,6 +49,8 @@ window.onload = function(){
 	});
 
 	socket.on('noauth', function () {
+		sessionStorage.setItem("username", '');
+		sessionStorage.setItem("cookie", '');
 		reset();
 		showLogin();
 	});

@@ -156,15 +156,15 @@ function Cards(config) {
 				});
 			});
 			try {
-				if(this.reader.cards[id]) {
+				if(that.reader.cards[id]) {
 					console.log('Remove card from reader', id);
-					this.reader.remove(id);
+					that.reader.remove(id);
 				}
 				if(cb) { cb(id, card); }
 			} catch(e) {
 				console.error('Reader error:', e);
 			}
-			this.emit('card', id);
+			that.emit('card', id);
 		});
 		return this;
 	};

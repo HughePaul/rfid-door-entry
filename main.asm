@@ -293,9 +293,9 @@ int_timer_no_flash:
 
 
 int_timer_leds:
-	; turn off lights when it reaches 4 ( 2 seconds )
+	; turn off lights when it reaches 6 ( 3 seconds )
 	movfw	timer_counter
-	addlw	-D'4'
+	addlw	-D'6'
 	btfss	STATUS, Z
 		goto int_no_timer_leds
 	clrf		PORTA
@@ -303,9 +303,9 @@ int_no_timer_leds:
 
 
 int_timer_programming:
-	; turn off programming mode when it reaches 8 ( 4 seconds )
+	; turn off programming mode when it reaches 10 ( 5 seconds )
 	movfw	timer_counter
-	addlw	-D'8'
+	addlw	-D'10'
 	btfss	STATUS, Z
 		goto	int_no_timer_programming
 
@@ -990,6 +990,9 @@ rfid_not_found:
 
 ; Card has permission to open door
 data_win:
+	; if the light is still green then don't accept another entry
+	btfsc	PORTA, OUT_GOOD
+		return
 	; turn on good access light
 	clrf	STATUS
 	bsf		PORTA, OUT_GOOD

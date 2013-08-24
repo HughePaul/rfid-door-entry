@@ -153,7 +153,7 @@ if (!module.parent) {
 // setup push
 if(config.push) {
 	var GCM = require('node-gcm');
-	var gcm = new GCM.Sender(config.push.id);
+	var gcm = new GCM.Sender(config.push.key);
 
 	var sendPush = function(text, payload){
 		var pushTokens = config.users

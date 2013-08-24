@@ -156,9 +156,12 @@ if(config.push) {
 	var gcm = new GCM.Sender(config.push.key);
 
 	var sendPush = function(text, payload){
-		var pushTokens = config.users
-			.map(function(a){return a.pushToken;})
-			.filter(function(a){return !!a;});
+		var pushTokens = [];
+		for (var name in config.users) {
+			if(config.users[name].pushToken) {
+				pushTokens.push( config.users[name].pushToken );
+			}
+		}
 		if(!pushTokens.length) { return; }
 
 		var message = new GCM.Message({

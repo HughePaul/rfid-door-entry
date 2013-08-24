@@ -165,7 +165,7 @@ if(config.push) {
 		if(!pushTokens.length) { return; }
 
 		var message = new GCM.Message({
-			collapseKey: Date.now(),
+			collapseKey: ''+Date.now(),
 		    delayWhileIdle: false,
 		    timeToLive: config.push.expiry || 300,
 			data: {
@@ -173,9 +173,11 @@ if(config.push) {
 				extra: payload
 			}
 		});
+
+		console.error('Push:', JSON.stringify(message), JSON.stringify(pushTokens));
 		gcm.sendNoRetry(message, pushTokens, function (err, result) {
-			if(err){ console.error(err); }
-			console.log(result);
+			if(err){ console.error('Push error:',err); }
+			console.log('Push result:',result);
 		});
 	};
 
@@ -186,7 +188,6 @@ if(config.push) {
 			case 'OPENED':
 			if(item.cardid) {
 				cards.getCard(item.cardid, function(err, card){
-					if(err){ console.error(err); }
 					if(!card) { card = {id:cardid,name:'Unknown',level:0}; }
 					sendPush(item.desc+' from '+card.name+' ('+card.level+')',{item:item,card:card});
 				});

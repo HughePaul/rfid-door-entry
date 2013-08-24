@@ -69,7 +69,7 @@ io.sockets.on('connection', function (socket) {
 	socket.on('login', function (username, password) {
 		console.log('login', username);
 		// try login
-		socket.authed = (config.users[username] !== undefined && config.users[username] === password);
+		socket.authed = (config.users[username] !== undefined && config.users[username].password === password);
 		if(!socket.authed) { return socket.emit('noauth'); }
 		// set up cookie
 		socket.emit('auth', username, userCookie(username));

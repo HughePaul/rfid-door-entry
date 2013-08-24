@@ -14,6 +14,7 @@
     "serialport": "latest",
     "connect": "latest",
     "socket.io": "latest",
-    "sqlite3": "latest"
+    "sqlite3": "latest",
+    "node-gcm": "latest"
   }
 }

@@ -150,4 +150,47 @@ if (!module.parent) {
   server.listen(config.port);
 }
 
+// setup push
+if(config.push) {
+	var GCM = require('node-gcm');
+	var gcm = new GCM.Sender(config.push.id);
 
+	var sendPush = function(text, payload){
+		var pushTokens = config.users
+			.map(function(a){return a.pushToken;})
+			.filter(function(a){return !!a;});
+		if(!pushTokens.length) { return; }
+
+		var message = new GCM.Message({
+			collapseKey: Date.now(),
+		    delayWhileIdle: false,
+		    timeToLive: config.push.expiry || 300,
+			data: {
+				alert: text,
+				extra: payload
+			}
+		});
+		gcm.sendNoRetry(note, pushTokens, function (err, result) {
+			if(err){ console.error(err); }
+			console.log(result);
+		});
+	};
+
+	cards.on('log', function(item){
+		switch(item.type) {
+			case 'ACCESS':
+			case 'NOACCESS':
+			case 'OPENED':
+			if(item.cardid) {
+				cards.getCard(item.cardid, function(err, card){
+					if(err){ console.error(err); }
+					if(!card) { card = {id:cardid,name:'Unknown',level:0}; }
+					sendPush(item.desc+' from '+card.name+' ('+card.level+')',{item:item,card:card});
+				});
+			} else {
+				sendPush(item.desc,{item:item});
+			}
+		}
+	});
+
+}

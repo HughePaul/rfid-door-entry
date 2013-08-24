@@ -173,7 +173,7 @@ if(config.push) {
 				extra: payload
 			}
 		});
-		gcm.sendNoRetry(note, pushTokens, function (err, result) {
+		gcm.sendNoRetry(message, pushTokens, function (err, result) {
 			if(err){ console.error(err); }
 			console.log(result);
 		});

@@ -1,15 +1,17 @@
+var path = require('path');
 var sys = require('sys');
 var EventEmitter = require('events').EventEmitter;
 var sqlite3 = require('sqlite3').verbose();
-var Reader = require('./Reader');
 
-function Cards(config) {
+function Cards(config, reader) {
 	var that = this;
+
+	this.reader = reader;
 
 	that.level = 0;
 
 	// open database
-	var filename = config.database || ':memory:';
+	var filename = config.database ? path.resolve(__dirname, '..',config.database) : ':memory:';
 	console.log('Opening database:',filename);
 	var db = new sqlite3.Database(filename, function(err) {
 		if(err) { return console.error(err); }
@@ -186,45 +188,10 @@ function Cards(config) {
 		return this;
 	};
 
-
-
-	// open reader
-	this.reader = new Reader();
-
-	var readerThrottle = null;
-	function retryOpenReader() {
-		readerThrottle = setTimeout(function(){
-			readerThrottle = null;
-			openReader();
-		}, 5000);
-	}
-	function openReader() {
-		if(readerThrottle) { return; }
-
-		var port;
-		var devs = require('fs').readdirSync('/dev/');
-		devs.forEach(function(dev){
-			if(config.comPort.test(dev)) {
-				port = dev;
-			}
-		});
-		if(!port) {
-			retryOpenReader();
-			return console.log('Cannot guess reader serial port');
-		}
-
-		try {
-			that.reader.open('/dev/'+port);
-		} catch (e) {
-			retryOpenReader();
-			return console.log('Cannot open reader serial port:',e);
-		}
-	}
-
 	this.reader
 		.on('close', function() {
-			console.error('Reader port closed. trying again in 5 seconds');
-			retryOpenReader();
+			console.error('Reader port closed.');
+			cards.reader.retryOpen();
 		})
 		.on('error', function(e) {
 			that.addLog({type: 'ERROR', desc: 'Reader error '+e});
@@ -306,7 +273,6 @@ function Cards(config) {
 	};
 
 	this.addLog({type: 'STARTUP', desc:'Server started'});
-	openReader();
 }
 sys.inherits(Cards, EventEmitter);
 

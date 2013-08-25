@@ -1,4 +1,4 @@
-var config = require('./config');
+var config = require('./lib/config').load();
 
 var GCM = require('node-gcm');
 var gcm = new GCM.Sender(config.push.key);
@@ -27,5 +27,14 @@ var sendPush = function(payload){
 };
 
 
-sendPush({msg:'test push message'});
-
+sendPush({
+	msg:'test push message',
+	item:{
+		desc:"item desc"
+	},
+	card:{
+		id:"cardid",
+		name:"name",
+		level: 15
+	}
+});

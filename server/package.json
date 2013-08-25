@@ -1,7 +1,7 @@
 {
   "name": "rfid-door-entry-server",
   "description": "",
-  "main": "./app",
+  "main": "./lib/app",
   "author": {
     "name": "Paul Winkler"
   },

@@ -2,7 +2,10 @@ var sys = require('sys');
 var EventEmitter = require('events').EventEmitter;
 var SerialPort = require('serialport');
 
-function Reader(port){
+function Reader(config){
+	this.config = config;
+	this.readerThrottle = null;
+
 	this.serialPort = null;
 
 	this._busy = false;
@@ -15,10 +18,6 @@ function Reader(port){
 	this._def('cards', function(){ return this._cards || {}; });
 	this._def('busy', function(){ return this._busy; });
 
-	if(port) {
-		this.open(port);
-	}
-
 }
 sys.inherits(Reader, EventEmitter);
 
@@ -30,8 +29,34 @@ Reader.prototype._def = function(name, getter, setter) {
 	});
 };
 
-Reader.prototype.open = function(port) {
+Reader.prototype.retryOpen = function() {
 	var reader = this;
+	reader.readerThrottle = setTimeout(function(){
+		reader.readerThrottle = null;
+		reader.open();
+	}, 5000);
+};
+
+Reader.prototype.open = function() {
+	var reader = this;
+
+	if(reader.readerThrottle) { return; }
+
+	var rePort = new RegExp(reader.config.comPort);
+
+	var port;
+	var devs = require('fs').readdirSync('/dev/');
+	devs.forEach(function(dev){
+		if(rePort.test(dev)) {
+			port = dev;
+		}
+	});
+	if(!port) {
+		reader.retryOpen();
+		return console.log('Cannot guess reader serial port');
+	}
+
+	port = '/dev/'+port;
 
 	var data = "";
 	var parser = function (emitter, buffer) {
@@ -59,13 +84,13 @@ Reader.prototype.open = function(port) {
 	};
 
 	try {
-		this.serialPort = new SerialPort.SerialPort(port, {
+		reader.serialPort = new SerialPort.SerialPort(port, {
 			baudrate: 9600,
 		    parser: parser
 		});
 	} catch(e) {
-		this.serialPort = null;
-		this.emit('error',e);
+		reader.serialPort = null;
+		reader.emit('error',e);
 		return;
 	}
 
@@ -79,6 +104,7 @@ Reader.prototype.open = function(port) {
 		reader.serialPort = null;
 		reader.emit('close');
 		reader.reset();
+		reader.retryOpen();
 	});
 
 	this.reset();

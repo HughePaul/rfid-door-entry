@@ -1,21 +1,56 @@
-
-var config = require('./config');
-
 var fs = require('fs');
+var path = require('path');
 var crypto = require('crypto');
+
+
+// Load config
+var config = require('./config').load();
+
+
+// Load Reader
+var Reader = require('./Reader');
+var reader = new Reader(config);
+
+
+// Load card database
+var Cards = require('./Cards');
+var cards = new Cards(config, reader);
+
+
+// Load push module
+var Push = require('./Push');
+var push = new Push(config);
+
+cards.on('log', function(item){
+	switch(item.type) {
+		case 'ACCESS':
+		case 'NOACCESS':
+		case 'OPENED':
+		if(item.cardid) {
+			cards.getCard(item.cardid, function(err, card){
+				if(card) {
+					push.send({item:item, card:card});
+				} else {
+					push.send({item:item});
+				}
+			});
+		} else {
+			push.send({item:item});
+		}
+	}
+});
+
+
+
+// Create app server
 var connect = require('connect');
-var socketio = require('socket.io');
-
-var Cards = require('./lib/Cards');
-var cards = new Cards(config);
-
-// create app server
 var app = connect.createServer(
-//	connect.logger(),
-	connect.static(__dirname + '/html')
+	connect.logger(),
+	connect['static']( path.resolve(__dirname, '..', 'html'))
 );
 
-// create http server
+
+// Create http server
 var server;
 if(config.ssl) {
 	server = require('https').createServer({
@@ -26,9 +61,12 @@ if(config.ssl) {
 	server = require('http').createServer(app);
 }
 
-// listen for sockets
+
+// Listen for sockets
+var socketio = require('socket.io');
 var io = socketio.listen(server);
 io.set('log level', 1);
+
 
 function userCookie(username) {
 	if(!config.users[username]) { return null; }
@@ -146,55 +184,13 @@ io.sockets.on('connection', function (socket) {
 });
 
 
-if (!module.parent) {
-  server.listen(config.port);
-}
+// open reader
+reader.open();
 
-// setup push
-if(config.push) {
-	var GCM = require('node-gcm');
-	var gcm = new GCM.Sender(config.push.key);
 
-	var sendPush = function(payload){
-		var pushTokens = [];
-		for (var name in config.users) {
-			if(config.users[name].pushToken) {
-				pushTokens.push( config.users[name].pushToken );
-			}
-		}
-		if(!pushTokens.length) { return; }
+// start server listening
+server.listen(config.port);
 
-		var message = new GCM.Message({
-			collapseKey: ''+Date.now(),
-		    delayWhileIdle: false,
-		    timeToLive: config.push.expiry || 86400,
-			data: payload
-		});
 
-		console.error('Push:', JSON.stringify(message), JSON.stringify(pushTokens));
-		gcm.sendNoRetry(message, pushTokens, function (err, result) {
-			if(err){ console.error('Push error:',err); }
-			console.log('Push result:',result);
-		});
-	};
 
-	cards.on('log', function(item){
-		switch(item.type) {
-			case 'ACCESS':
-			case 'NOACCESS':
-			case 'OPENED':
-			if(item.cardid) {
-				cards.getCard(item.cardid, function(err, card){
-					if(card) {
-						sendPush({item:item, card:card});
-					} else {
-						sendPush({item:item});
-					}
-				});
-			} else {
-				sendPush({item:item});
-			}
-		}
-	});
 
-}

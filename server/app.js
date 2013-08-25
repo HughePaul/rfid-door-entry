@@ -155,7 +155,7 @@ if(config.push) {
 	var GCM = require('node-gcm');
 	var gcm = new GCM.Sender(config.push.key);
 
-	var sendPush = function(text, payload){
+	var sendPush = function(payload){
 		var pushTokens = [];
 		for (var name in config.users) {
 			if(config.users[name].pushToken) {
@@ -167,11 +167,8 @@ if(config.push) {
 		var message = new GCM.Message({
 			collapseKey: ''+Date.now(),
 		    delayWhileIdle: false,
-		    timeToLive: config.push.expiry || 300,
-			data: {
-				alert: text,
-				extra: payload
-			}
+		    timeToLive: config.push.expiry || 86400,
+			data: payload
 		});
 
 		console.error('Push:', JSON.stringify(message), JSON.stringify(pushTokens));
@@ -189,10 +186,10 @@ if(config.push) {
 			if(item.cardid) {
 				cards.getCard(item.cardid, function(err, card){
 					if(!card) { card = {id:cardid,name:'Unknown',level:0}; }
-					sendPush(item.desc+' from '+card.name+' ('+card.level+')',{item:item,card:card});
+					sendPush({msg: item.desc+' from '+card.name+' ('+card.level+')', item:item, card:card});
 				});
 			} else {
-				sendPush(item.desc,{item:item});
+				sendPush({msg:item.desc,item:item});
 			}
 		}
 	});

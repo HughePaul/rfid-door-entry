@@ -3,7 +3,7 @@ var config = require('./config');
 var GCM = require('node-gcm');
 var gcm = new GCM.Sender(config.push.key);
 
-var sendPush = function(text, payload){
+var sendPush = function(payload){
 	var pushTokens = [];
 	for (var name in config.users) {
 		if(config.users[name].pushToken) {
@@ -15,11 +15,8 @@ var sendPush = function(text, payload){
 	var message = new GCM.Message({
 		collapseKey: ''+Date.now(),
 	    delayWhileIdle: false,
-	    timeToLive: config.push.expiry || 300,
-		data: {
-			alert: text,
-			extra: payload
-		}
+	    timeToLive: config.push.expiry || 86400,
+		data: payload
 	});
 
 	console.error('Push:', JSON.stringify(message), JSON.stringify(pushTokens));
@@ -30,5 +27,5 @@ var sendPush = function(text, payload){
 };
 
 
-sendPush('test push message', {extra:'text'});
+sendPush({msg:'test push message'});
 

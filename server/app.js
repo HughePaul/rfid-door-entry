@@ -185,11 +185,14 @@ if(config.push) {
 			case 'OPENED':
 			if(item.cardid) {
 				cards.getCard(item.cardid, function(err, card){
-					if(!card) { card = {id:cardid,name:'Unknown',level:0}; }
-					sendPush({msg: item.desc+' from '+card.name+' ('+card.level+')', item:item, card:card});
+					if(card) {
+						sendPush({item:item, card:card});
+					} else {
+						sendPush({item:item});
+					}
 				});
 			} else {
-				sendPush({msg:item.desc,item:item});
+				sendPush({item:item});
 			}
 		}
 	});

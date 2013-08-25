@@ -10,7 +10,7 @@ function Push(config) {
 
 Push.prototype.send = function(payload){
 	var pushTokens = [];
-	for (var name in config.users) {
+	for (var name in this.config.users) {
 		if(this.config.users[name].pushToken) {
 			pushTokens.push( this.config.users[name].pushToken );
 		}

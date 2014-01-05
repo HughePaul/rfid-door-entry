@@ -22,6 +22,7 @@ var Push = require('./Push');
 var push = new Push(config);
 
 cards.on('log', function(item){
+/*
 	if(item.timestamp) {
  		var timeParts = item.timestamp.split(/[-: ]/);
  		timeParts[1]++;
@@ -29,6 +30,7 @@ cards.on('log', function(item){
 	} else {
 		item.ms = Date.now();
 	}
+*/
 	switch(item.type) {
 		case 'ACCESS':
 		case 'NOACCESS':

@@ -22,15 +22,15 @@ var Push = require('./Push');
 var push = new Push(config);
 
 cards.on('log', function(item){
-/*
+
 	if(item.timestamp) {
  		var timeParts = item.timestamp.split(/[-: ]/);
- 		timeParts[1]++;
+ 		timeParts[1]--;
  		item.ms = Date.UTC.apply(Date, timeParts);
 	} else {
 		item.ms = Date.now();
 	}
-*/
+
 	switch(item.type) {
 		case 'ACCESS':
 		case 'NOACCESS':

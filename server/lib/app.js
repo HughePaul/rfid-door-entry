@@ -117,7 +117,7 @@ io.sockets.on('connection', function (socket) {
 		console.log('login', username);
 		// try login
 		socket.authed = (config.users[username] !== undefined && config.users[username].password === password);
-		if(!socket.authed) { return socket.emit('noauth'); }
+		if(!socket.authed) { return socket.emit('noauth','badlogin'); }
 		// set up cookie
 		socket.emit('auth', username, userCookie(username));
 		loggedInUsername = username;
@@ -129,7 +129,7 @@ io.sockets.on('connection', function (socket) {
 		console.log('logout', loggedInUsername);
 		// try login
 		socket.authed = false;
-		socket.emit('noauth');
+		socket.emit('noauth','logout');
 		loggedInUsername = '';
 	});
 

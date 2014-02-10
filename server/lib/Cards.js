@@ -117,20 +117,24 @@ function Cards(config, reader) {
 			return this.removeCard(id, cb);
 		}
 
-		try {
-			// if card is not on reader or level has changed then remove and add with new level
-			if (details && (!that.reader.cards[id] || that.reader.cards[id] !== details.level) ) {
-				if(details.level) {
-					console.log('Add card to reader', id, details.level);
-					that.reader.add(id, details.level);
-				}
-			}
-		} catch(e) {
-			console.error('Reader error:', e);
-		}
-
 		that.getCard(id, function(err, card) {
 			if(err) { return console.error('Cards:db:',err); }
+
+			try {
+				// if card is not on reader or level has changed then remove and add with new level
+				if (details && (!that.reader.cards[id] || that.reader.cards[id] !== details.level || details.pattern !== card.pattern) ) {
+					if(details.level) {
+						var now = new Date();
+						var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
+						var current = (details.pattern.substr(hour, 1) === '#');
+						console.log('Add card to reader', id, details.level, current);
+						that.reader.add(id, current ? details.level : 0);
+					}
+				}
+			} catch(e) {
+				console.error('Reader error:', e);
+			}
+
 
 			db.serialize(function() {
 				var isNew = false;

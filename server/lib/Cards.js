@@ -6,7 +6,7 @@ var sqlite3 = require('sqlite3').verbose();
 function Cards(config, reader) {
 	var that = this;
 
-	this.reader = reader;
+	that.reader = reader;
 
 	that.level = 0;
 
@@ -23,7 +23,7 @@ function Cards(config, reader) {
 				if(err) {
 					console.log('Creating cards table');
 					db.serialize(function() {
-						db.run("CREATE TABLE cards (id TEXT, level INTEGER, name TEXT, modified TEXT, avatar TEXT, notes TEXT)", function(err){
+						db.run("CREATE TABLE cards (id TEXT, level INTEGER, name TEXT, modified TEXT, avatar TEXT, notes TEXT, pattern TEXT)", function(err){
 							if(err) { return console.error(err); }
 							console.log('log cards created');
 						});
@@ -57,8 +57,9 @@ function Cards(config, reader) {
 		});
 		console.log('LOG:', item);
 		if(item.type !== 'UPDATED') {
-			this.emit('log', item);
+			that.emit('log', item);
 		}
+		return that;
 	};
 	this.getLog = function(count, cb) {
 		if(!count) { count = 100; }
@@ -73,13 +74,42 @@ function Cards(config, reader) {
 
 	this.getCard = function(id, cb) {
 		db.serialize(function() {
-			db.get("SELECT id, level, name, modified, avatar, notes FROM cards WHERE id = $id", { $id: id }, function(err, card) {
+			db.get("SELECT id, level, name, modified, avatar, notes, pattern FROM cards WHERE id = $id", { $id: id }, function(err, card) {
 				if(err) { console.error('Cards:db:',err); }
 				if(cb) { cb(err, card); }
 			});
 		});
-		return this;
+		return that;
 	};
+
+	this.updateCardTimers = function() {
+		that.getCards(function(err, cards) {
+			if(err) { return console.error(err); }
+			for(var id in cards) {
+				var details = cards[id];
+				var now = new Date();
+				var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
+				var last = (details.pattern.substr(hour ? hour - 1 : 47, 1) === '#');
+				var current = (details.pattern.substr(hour, 1) === '#');
+				if(current !== last) {
+					if(current) {
+						console.log('Enable card on timer', id);
+						that.reader.add(id, details.level);
+					} else {
+						console.log('Disable card on timer', id);
+						that.reader.add(id, 0);
+					}
+				}
+			}
+		});
+		return that;
+	};
+
+	var firstInterval = (30 * 60000) - (Date.now() % (30 * 60000));
+	setTimeout(function(){
+		setInterval(updateCardTimers, 30*60000);
+	}, firstInterval);
+
 
 	this.updateCard = function(id, details, cb) {
 		// if no details given then remove card
@@ -99,7 +129,7 @@ function Cards(config, reader) {
 			console.error('Reader error:', e);
 		}
 
-		this.getCard(id, function(err, card) {
+		that.getCard(id, function(err, card) {
 			if(err) { return console.error('Cards:db:',err); }
 
 			db.serialize(function() {
@@ -122,13 +152,15 @@ function Cards(config, reader) {
 				card.name =	details.name || card.name || 'UNKNOWN';
 				card.avatar = details.avatar !== undefined ? details.avatar : (card.avatar || '');
 				card.notes = details.notes !== undefined ? details.notes : (card.notes || '');
+				card.pattern = details.pattern !== undefined ? details.pattern : (card.pattern || '################################################');
 
-				db.run("UPDATE cards SET level = $level, name = $name, modified = datetime('now'), avatar = $avatar, notes = $notes WHERE id = $id", {
+				db.run("UPDATE cards SET level = $level, name = $name, modified = datetime('now'), avatar = $avatar, notes = $notes, pattern = $pattern WHERE id = $id", {
 					$id: id,
 					$level: card.level,
 					$name: card.name,
 					$avatar: card.avatar,
-					$notes: card.notes
+					$notes: card.notes,
+					$pattern: card.pattern
 				}, function(err) {
 					if(err) { return console.error('Cards:db:cards:update',err); }
 
@@ -144,11 +176,11 @@ function Cards(config, reader) {
 				});
 			});
 		});
-		return this;
+		return that;
 	};
 
 	this.removeCard = function(id, cb) {
-		this.getCard(id, function(err, card) {
+		that.getCard(id, function(err, card) {
 			if(err) { return console.error('Cards:db:',err); }
 
 			db.serialize(function() {
@@ -168,12 +200,12 @@ function Cards(config, reader) {
 			}
 			that.emit('card', id);
 		});
-		return this;
+		return that;
 	};
 
 	this.getCards = function(cb) {
 		db.serialize(function() {
-			db.all("SELECT id, level, name, modified, avatar, notes FROM cards", function(err, cardArray) {
+			db.all("SELECT id, level, name, modified, avatar, notes, pattern FROM cards", function(err, cardArray) {
 				var cards = {};
 				if(err) {
 					console.error('Cards:db:',err);
@@ -185,10 +217,10 @@ function Cards(config, reader) {
 				if(cb) { cb(err, cards); }
 			});
 		});
-		return this;
+		return that;
 	};
 
-	this.reader
+	that.reader
 		.on('close', function() {
 			console.error('Reader port closed.');
 			cards.reader.retryOpen();
@@ -227,11 +259,11 @@ function Cards(config, reader) {
 		})
 		.on('access', function(id, level){
 			that.addLog({type: 'ACCESS', desc: 'Access granted', cardid: id, level: level});
-			that.updateCard(id, {level: level});
+			//that.updateCard(id, {level: level});
 		})
 		.on('noaccess', function(id, level){
 			that.addLog({type: 'NOACCESS', desc: 'Access denied', cardid: id, level: level});
-			that.updateCard(id, {level: level});
+			//that.updateCard(id, {level: level});
 		})
 		.on('unknown', function(id){
 			that.addLog({type: 'NOACCESS', desc: 'Access denied', cardid: id, level: 0});
@@ -257,22 +289,20 @@ function Cards(config, reader) {
 		});
 
 	this.activate = function(loggedInUsername, cb) {
-		var that = this;
-		this.reader.activate(function(){
+		that.reader.activate(function(){
 			that.addLog({type: 'OPENED', desc:'Door opened by '+loggedInUsername});
 			if(cb){ cb(loggedInUsername); }
 		});
 	};
 
 	this.setLevel = function(level, loggedInUsername, cb) {
-		var that = this;
-		this.reader.setLevel(level, function(level){
+		that.reader.setLevel(level, function(level){
 			that.addLog({type: 'LEVEL', desc:'Security level changed by '+loggedInUsername, level:level});
 			if(cb){ cb(level, loggedInUsername); }
 		});
 	};
 
-	this.addLog({type: 'STARTUP', desc:'Server started'});
+	that.addLog({type: 'STARTUP', desc:'Server started'});
 }
 sys.inherits(Cards, EventEmitter);
 

@@ -77,7 +77,7 @@ button:hover {
 	top: 40px;
 	left: 255px;
 	right: 5px;
-	height: 200px;
+	height: 250px;
 	padding: 6px;
 	overflow: auto;
 	overflow: auto;
@@ -108,7 +108,7 @@ button:hover {
 	position: absolute;
 	left: 255px;
 	right: 5px;
-	top: 260px;
+	top: 310px;
 	bottom: 5px;
 	padding: 6px;
 	overflow: auto;

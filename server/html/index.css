@@ -49,6 +49,17 @@ button {
 button:hover {
 }
 
+.pattern input {
+	width: 10px;
+	height: 10px;
+	margin: 0px;
+	padding: 1px;
+	border: solid 1px transparent;
+}
+.pattern input.currentHour {
+	border: solid 1px red;
+}
+
 #cards {
 	position: absolute;
 	top: 40px;

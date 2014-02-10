@@ -22,6 +22,11 @@ window.onload = function(){
 	var cardNotes = document.getElementById('cardnotes');
 	var saveBtn = document.getElementById('saveBtn');
 
+	var pattern = [];
+	for(var i=0; i<48; i++) {
+		pattern[i] = document.getElementById('cardpattern'+i);
+	}
+
 	saveBtn.disabled = true;
 	removeBtn.disabled = true;
 	addBtn.disabled = true;
@@ -312,6 +317,14 @@ window.onload = function(){
 		cardAvatar.value = card && card.avatar !== undefined ? card.avatar : '';
 		cardNotes.value = card && card.notes !== undefined ? card.notes : '';
 
+		var now = new Date();
+		var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
+		for(var i=0; i<48; i++) {
+			pattern[i].disabled = disable;
+			pattern[i].checked = (!card || card.pattern.substr(0,1) === '#');
+			pattern[i].className = (i === hour) ? 'currentHour' : '';
+		}
+
 		saveBtn.disabled =
 		cardId.disabled =
 		cardName.disabled =
@@ -328,12 +341,19 @@ window.onload = function(){
 		if(!currentCardId) {
 			currentCardId = cardId.value;
 		}
+
+		var timePattern = '';
+		for(var i=0; i<48; i++) {
+			timePattern += (pattern[i].checked) ? '#' : '-';
+		}
+
 		var card = {
 			name: cardName.value,
 			id: currentCardId,
 			level: cardLevel.value,
 			avatar: cardAvatar.value,
-			notes: cardNotes.value
+			notes: cardNotes.value,
+			pattern: timePattern
 		};
 		// check details
 

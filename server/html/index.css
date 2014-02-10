@@ -50,13 +50,13 @@ button:hover {
 }
 
 .pattern input {
-	width: 10px;
-	height: 10px;
+	width: 14px;
+	height: 14px;
 	margin: 0px;
 	padding: 1px;
-	border: solid 1px transparent;
 }
 .pattern input.currentHour {
+	background-color: #ff4444;
 	border: solid 1px red;
 }
 

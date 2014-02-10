@@ -321,7 +321,7 @@ window.onload = function(){
 		var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
 		for(var i=0; i<48; i++) {
 			pattern[i].disabled = disable;
-			pattern[i].checked = (!card || card.pattern.substr(0,1) === '#');
+			pattern[i].checked = (!card || card.pattern.substr(i,1) === '#');
 			pattern[i].className = (i === hour) ? 'currentHour' : '';
 		}
 

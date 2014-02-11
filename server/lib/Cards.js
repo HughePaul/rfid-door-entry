@@ -87,17 +87,19 @@ function Cards(config, reader) {
 			if(err) { return console.error(err); }
 			for(var id in cards) {
 				var details = cards[id];
-				var now = new Date();
-				var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
-				var last = (details.pattern.substr(hour ? hour - 1 : 47, 1) === '#');
-				var current = (details.pattern.substr(hour, 1) === '#');
-				if(current !== last) {
-					if(current) {
-						console.log('Enable card on timer', id);
-						that.reader.add(id, details.level);
-					} else {
-						console.log('Disable card on timer', id);
-						that.reader.add(id, 0);
+				if(details.pattern) {
+					var now = new Date();
+					var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
+					var last = (details.pattern.substr(hour ? hour - 1 : 47, 1) === '#');
+					var current = (details.pattern.substr(hour, 1) === '#');
+					if(current !== last) {
+						if(current) {
+							console.log('Enable card on timer', id);
+							that.reader.add(id, details.level);
+						} else {
+							console.log('Disable card on timer', id);
+							that.reader.add(id, 0);
+						}
 					}
 				}
 			}

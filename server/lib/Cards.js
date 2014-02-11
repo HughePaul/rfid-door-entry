@@ -112,6 +112,7 @@ function Cards(config, reader) {
 	setTimeout(function(){
 		setInterval(that.updateCardTimers, 30*60000);
 	}, firstInterval);
+	setTimeout(that.updateCardTimers, 5000);
 
 
 	this.updateCard = function(id, details, cb) {

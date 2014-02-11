@@ -92,10 +92,10 @@ function Cards(config, reader) {
 					var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
 					var last = (details.pattern.substr(hour ? hour - 1 : 47, 1) === '#');
 					var current = (details.pattern.substr(hour, 1) === '#');
-					console.log('timer card', card.name, id, 'hour',hour/2, 'last',last, 'current',current);
+					console.log('timer card', details.name, id, 'hour',hour/2, 'last',last, 'current',current);
 					if(current !== last) {
 						if(current) {
-							console.log('Enable card on timer', card.name, id);
+							console.log('Enable card on timer', details.name, id);
 							that.reader.add(id, details.level);
 						} else {
 							console.log('Disable card on timer', id);

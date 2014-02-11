@@ -127,11 +127,15 @@ function Cards(config, reader) {
 				// if card is not on reader or level has changed then remove and add with new level
 				if (details && (!that.reader.cards[id] || that.reader.cards[id] !== details.level || details.pattern !== card.pattern) ) {
 					if(details.level) {
-						var now = new Date();
-						var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
-						var current = (details.pattern.substr(hour, 1) === '#');
-						console.log('Add card to reader', id, details.level, current);
-						that.reader.add(id, current ? details.level : 0);
+						if(details.pattern) {
+							var now = new Date();
+							var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
+							var current = (details.pattern.substr(hour, 1) === '#');
+							console.log('Add card to reader', id, details.level, current);
+							that.reader.add(id, current ? details.level : 0);
+						} else {
+							that.reader.add(id, details.level);
+						}
 					}
 				}
 			} catch(e) {

@@ -107,7 +107,7 @@ function Cards(config, reader) {
 
 	var firstInterval = (30 * 60000) - (Date.now() % (30 * 60000));
 	setTimeout(function(){
-		setInterval(updateCardTimers, 30*60000);
+		setInterval(that.updateCardTimers, 30*60000);
 	}, firstInterval);
 
 

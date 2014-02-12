@@ -49,15 +49,35 @@ button {
 button:hover {
 }
 
-.pattern input {
-	width: 14px;
-	height: 14px;
+#cardPattern {
+	cursor: hand;
 	margin: 0px;
-	padding: 1px;
+	padding: 0;
+	margin-bottom: 3px;
 }
-.pattern input.currentHour {
-	background-color: #ff4444;
-	border: solid 1px red;
+#cardPattern th {
+	padding-left: 4px;
+	padding-right: 4px;
+}
+#cardPattern input[type=checkbox] {
+	cursor: hand;
+	-moz-appearance:none;
+	-webkit-appearance:none;
+	-o-appearance:none;
+	width: 14px;
+	height: 12px;
+	padding: 0;
+	margin: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0); 
+	outline: solid 2px #ccc;
+	background-color: #f22
+}
+#cardPattern input[type=checkbox]:checked {
+	background-color: #2f2 !important
+}
+#cardPattern input[type=checkbox].currentHour {
+	outline: solid 2px #55f !important;
 }
 
 #cards {
@@ -77,7 +97,7 @@ button:hover {
 	top: 40px;
 	left: 255px;
 	right: 5px;
-	height: 270px;
+	height: 280px;
 	padding: 6px;
 	overflow: auto;
 	overflow: auto;
@@ -108,7 +128,7 @@ button:hover {
 	position: absolute;
 	left: 255px;
 	right: 5px;
-	top: 330px;
+	top: 340px;
 	bottom: 5px;
 	padding: 6px;
 	overflow: auto;

@@ -57,6 +57,16 @@ window.onload = function() {
 	patternHolder.addEventListener('mousedown', checkboxDown);
 	document.body.addEventListener('mouseup', checkboxCancel);
 
+	var updateCurrentTime = function() {
+		var now = new Date();
+		var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
+		for (var i = 0; i < 48; i++) {
+			pattern[i].className = (i === hour) ? 'currentHour' : '';
+		}
+	};
+
+	updateCurrentTime();
+	setInterval(updateCurrentTime, 60000);
 
 	saveBtn.disabled = true;
 	removeBtn.disabled = true;
@@ -349,12 +359,9 @@ window.onload = function() {
 		cardAvatar.value = card && card.avatar !== undefined ? card.avatar : '';
 		cardNotes.value = card && card.notes !== undefined ? card.notes : '';
 
-		var now = new Date();
-		var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
 		for (var i = 0; i < 48; i++) {
 			pattern[i].disabled = disable;
 			pattern[i].checked = (!card || card.pattern.substr(i, 1) === '#');
-			pattern[i].className = (i === hour) ? 'currentHour' : '';
 		}
 
 		saveBtn.disabled =

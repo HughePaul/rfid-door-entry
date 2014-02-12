@@ -74,10 +74,13 @@ button:hover {
 	background-color: #f22
 }
 #cardPattern input[type=checkbox]:checked {
-	background-color: #2f2 !important
+	background-color: #2f2;
 }
 #cardPattern input[type=checkbox].currentHour {
-	outline: solid 2px #55f !important;
+	outline: solid 2px #33f !important;
+}
+#cardPattern input[type=checkbox]:disabled {
+	background-color: #888 !important;
 }
 
 #cards {

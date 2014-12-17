@@ -13,6 +13,8 @@
     "async": "latest",
     "serialport": "latest",
     "connect": "latest",
+    "morgan": "latest",
+    "serve-static": "latest",
     "socket.io": "latest",
     "sqlite3": "latest",
     "node-gcm": "latest"

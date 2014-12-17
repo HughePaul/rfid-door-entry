@@ -53,9 +53,9 @@ cards.on('log', function(item){
 
 // Create app server
 var connect = require('connect');
-var app = connect.createServer(
-	connect.logger(),
-	connect['static']( path.resolve(__dirname, '..', 'html'))
+var app = connect(
+	require('morgan')(),
+	require('serve-static')( path.resolve(__dirname, '..', 'html'))
 );
 
 

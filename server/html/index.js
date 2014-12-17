@@ -361,7 +361,7 @@ window.onload = function() {
 
 		for (var i = 0; i < 48; i++) {
 			pattern[i].disabled = disable;
-			pattern[i].checked = (!card || card.pattern.substr(i, 1) === '#');
+			pattern[i].checked = (!card || !card.pattern || card.pattern.substr(i, 1) === '#');
 		}
 
 		saveBtn.disabled =

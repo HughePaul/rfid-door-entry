@@ -122,7 +122,7 @@ function Cards(config, reader) {
 							that.reader.add(id, details.level);
 						} else {
 							console.log('Disable card on timer', id);
-							that.reader.add(id, 0);
+							that.reader.add(id, 1);
 						}
 					}
 				}

@@ -75,7 +75,9 @@ window.onload = function() {
 	openBtn.disabled = true;
 
 	// connect socket and listen to events
-	var socket = io.connect(window.location.href);
+	var socket = io(window.location.href, {
+		'path': window.location.pathname + 'socket.io';
+	});
 
 	var cardCache = {};
 

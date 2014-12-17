@@ -53,10 +53,11 @@ cards.on('log', function(item){
 
 // Create app server
 var connect = require('connect');
-var app = connect(
-	require('morgan')(),
-	require('serve-static')( path.resolve(__dirname, '..', 'html'))
-);
+var app = connect();
+
+app.use(require('morgan')('combined'));
+
+app.use(require('serve-static')( path.resolve(__dirname, '..', 'html') ));
 
 
 // Create http server
@@ -67,7 +68,7 @@ if(config.ssl) {
 		cert: fs.readFileSync(config.ssl.cert)
 	}, app);
 } else {
-	server = require('http').createServer(app);
+	server = require('http').Server(app);
 }
 
 
@@ -195,7 +196,6 @@ io.sockets.on('connection', function (socket) {
 
 // open reader
 reader.open();
-
 
 // start server listening
 server.listen(config.port);

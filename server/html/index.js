@@ -76,7 +76,7 @@ window.onload = function() {
 
 	// connect socket and listen to events
 	var socket = io(window.location.href, {
-		'path': window.location.pathname + 'socket.io';
+		'path': window.location.pathname + 'socket.io'
 	});
 
 	var cardCache = {};

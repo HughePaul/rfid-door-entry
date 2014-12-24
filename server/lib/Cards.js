@@ -283,7 +283,7 @@ function Cards(config, reader) {
 	that.reader
 		.on('close', function() {
 			console.error('Reader port closed.');
-			cards.reader.retryOpen();
+			that.reader.retryOpen();
 		})
 		.on('error', function(e) {
 			that.addLog({

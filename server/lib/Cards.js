@@ -152,13 +152,13 @@ function Cards(config, reader) {
 			try {
 				// if card is not on reader or level has changed then remove and add with new level
 				if (details && (!that.reader.cards[id] || that.reader.cards[id] !== details.level || (details.pattern && details.pattern !== card.pattern))) {
-					if (details.level) {
+					if (details.level > 1) {
 						if (details.pattern) {
 							var now = new Date();
 							var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
 							var current = (details.pattern.substr(hour, 1) === '#');
 							console.log(current ? 'Enabled' : 'Disable', 'card on reader', id, details.level);
-							that.reader.add(id, current ? details.level : 0);
+							that.reader.add(id, current ? details.level : 1);
 						} else {
 							console.log('Add card to reader', id, details.level);
 							that.reader.add(id, details.level);

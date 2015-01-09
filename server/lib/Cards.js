@@ -194,7 +194,11 @@ function Cards(config, reader) {
 				// update record with details
 				console.log('Update card in database', id);
 
-				card.level = details.level || card.level || 0;
+				// only update level if it is more than 1, to stop a pattern card having its db level removed
+				if(details.level > 1) {
+					card.level = details.level || card.level || 0;
+				}
+
 				card.name = details.name || card.name || 'UNKNOWN';
 				card.avatar = details.avatar !== undefined ? details.avatar : (card.avatar || '');
 				card.notes = details.notes !== undefined ? details.notes : (card.notes || '');

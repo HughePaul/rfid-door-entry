@@ -4,3 +4,5 @@ rfid-door-entry.sublime-project
 cards.sqlite
 rfid-door-entry.X
 config.json
+DoorEntryExtension.pem
+DoorEntryExtension.crx

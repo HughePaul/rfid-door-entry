@@ -11,8 +11,13 @@ function Push(config) {
 Push.prototype.send = function(payload){
 	var pushTokens = [];
 	for (var name in this.config.users) {
+		// single token
 		if(this.config.users[name].pushToken) {
 			pushTokens.push( this.config.users[name].pushToken );
+		}
+		// array of tokens
+		if(this.config.users[name].pushTokens) {
+			pushTokens = pushTokens.concat( this.config.users[name].pushTokens );
 		}
 	}
 	if(!pushTokens.length) { return; }

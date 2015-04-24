@@ -20,6 +20,24 @@ function Cards(config, reader) {
 
 		// test database to see if we need to make the table
 		db.serialize(function() {
+			db.get("SELECT level FROM settings LIMIT 1", function(err, data) {
+				// if there was an error then create the table
+				if (err) {
+					console.log('Creating cards table');
+					db.serialize(function() {
+						db.run("CREATE TABLE settings (level INTEGER)", function(err) {
+							if (err) {
+								return console.error(err);
+							}
+							console.log('log settings created');
+						});
+					});
+					return;
+				}
+				if(data && data.level) {
+					that.setLevel(data.level, 'Startup');
+				}
+			});
 			db.get("SELECT count(id) FROM cards", function(err) {
 				// if there was an error then create the table
 				if (err) {
@@ -67,6 +85,14 @@ function Cards(config, reader) {
 		if (item.type !== 'UPDATED') {
 			that.emit('log', item);
 		}
+		return that;
+	};
+	this.saveLevel = function(level) {
+		db.run("UPDATE settings SET level = ?", [ level ], function(err) {
+			if (err) {
+				console.error('Cards:db:', err);
+			}
+		});
 		return that;
 	};
 	this.getLog = function(count, cb) {
@@ -385,6 +411,7 @@ function Cards(config, reader) {
 			that.level = level;
 			//			that.addLog({type: 'LEVEL', desc: 'Security Level', level: level});
 			that.emit('level', level);
+			that.saveLevel(level);
 		})
 		.on('activate', function() {
 			//			that.addLog({type: 'OPENED', desc: 'Door Opened'});

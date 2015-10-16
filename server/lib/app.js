@@ -202,12 +202,12 @@ io.sockets.on('connection', function(socket) {
 		}
 		cards.setLevel(level, loggedInUsername);
 	});
-	socket.on('open', function(level) {
+	socket.on('open', function(readerId) {
 		if (!socket.authed) {
 			return socket.emit('noauth');
 		}
 		try {
-			cards.activate(loggedInUsername);
+			cards.activate(readerId, loggedInUsername);
 		} catch (e) {
 			console.error(e);
 			socket.emit('error', e.message);

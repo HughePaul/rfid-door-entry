@@ -420,7 +420,7 @@ window.onload = function() {
 	openBtn.onclick = function() {
 		if (confirm('Are you sure you want to open the door?')) {
 			console.log('Open');
-			socket.emit('open');
+			socket.emit('open', 0);
 		}
 	};
 

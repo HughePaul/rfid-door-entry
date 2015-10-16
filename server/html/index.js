@@ -1,13 +1,15 @@
+'use strict';
+
 window.onload = function() {
 
 	var login = document.getElementById('login');
 	var username = document.getElementById('username');
 	var password = document.getElementById('password');
 	var loginBtn = document.getElementById('loginBtn');
+	var logoutBtn = document.getElementById('logoutBtn');
 
 	var logsDiv = document.getElementById('log');
 	var cardsDiv = document.getElementById('cards');
-	var detailsDiv = document.getElementById('details');
 	var addBtn = document.getElementById('addBtn');
 	var removeBtn = document.getElementById('removeBtn');
 	var currentLevel = document.getElementById('currentLevel');
@@ -80,14 +82,14 @@ window.onload = function() {
 	var cardCache = {};
 
 	socket.on('connect', function() {
-		var username = sessionStorage.getItem("username");
-		var cookie = sessionStorage.getItem("cookie");
+		var username = sessionStorage.getItem('username');
+		var cookie = sessionStorage.getItem('cookie');
 		socket.emit('auth', username, cookie);
 	});
 
 	socket.on('auth', function(username, cookie) {
-		sessionStorage.setItem("username", username);
-		sessionStorage.setItem("cookie", cookie);
+		sessionStorage.setItem('username', username);
+		sessionStorage.setItem('cookie', cookie);
 		addBtn.disabled = false;
 		currentLevel.disabled = false;
 		openBtn.disabled = false;
@@ -95,8 +97,8 @@ window.onload = function() {
 	});
 
 	socket.on('noauth', function() {
-		sessionStorage.setItem("username", '');
-		sessionStorage.setItem("cookie", '');
+		sessionStorage.setItem('username', '');
+		sessionStorage.setItem('cookie', '');
 		reset();
 		showLogin();
 	});
@@ -212,7 +214,7 @@ window.onload = function() {
 		authing = true;
 		console.log('Auth required');
 
-		username.value = sessionStorage.getItem("username");
+		username.value = sessionStorage.getItem('username');
 		password.value = '';
 
 		login.style.display = 'block';
@@ -222,7 +224,7 @@ window.onload = function() {
 		}
 		loginBtn.onclick = doLogin;
 		username.onkeypress = password.onkeypress = function(e) {
-			var code = (e.keyCode ? e.keyCode : e.which);
+			var code = e.keyCode ? e.keyCode : e.which;
 			if (code === 13) {
 				if (!username.value) {
 					username.focus();
@@ -302,7 +304,7 @@ window.onload = function() {
 			logCard.appendChild(avatar);
 
 			var logCardName = document.createElement('div');
-			logCardName.textContent = (card ? card.name : 'UNKNOWN CARD');
+			logCardName.textContent = card ? card.name : 'UNKNOWN CARD';
 			logCard.appendChild(logCardName);
 			var logCardId = document.createElement('div');
 			logCardId.textContent = item.cardid;

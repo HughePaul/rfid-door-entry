@@ -1,3 +1,5 @@
+'use strict';
+
 var fs = require('fs');
 var path = require('path');
 
@@ -10,11 +12,11 @@ module.exports = {
 			)
 		);
 	},
-	save: function(config){
+	save: function(config) {
 		fs.writeFileSync(
 			path.resolve(__dirname, 'config.json'),
 			'utf8',
-			JSON.stringify(config,null,'    ')
+			JSON.stringify(config, null, '    ')
 		);
 	}
 };

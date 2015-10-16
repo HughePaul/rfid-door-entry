@@ -1,7 +1,11 @@
+'use strict';
+
 var path = require('path');
 var sys = require('sys');
-var EventEmitter = require('events').EventEmitter;
-var sqlite3 = require('sqlite3').verbose();
+var EventEmitter = require('events')
+	.EventEmitter;
+var sqlite3 = require('sqlite3')
+	.verbose();
 
 function Cards(config, reader) {
 	var that = this;
@@ -34,7 +38,7 @@ function Cards(config, reader) {
 					});
 					return;
 				}
-				if(data && data.level) {
+				if (data && data.level) {
 					that.setLevel(data.level, 'Startup');
 				}
 			});
@@ -70,7 +74,10 @@ function Cards(config, reader) {
 	});
 
 	this.addLog = function(item) {
-		item.timestamp = new Date().toISOString().replace('T', ' ').replace(/\..*$/, '');
+		item.timestamp = new Date()
+			.toISOString()
+			.replace('T', ' ')
+			.replace(/\..*$/, '');
 		db.run("INSERT INTO log (timestamp, type, desc, cardid, level) VALUES (datetime('now'),?,?,?,?)", [
 			item.type,
 			item.desc,
@@ -88,7 +95,7 @@ function Cards(config, reader) {
 		return that;
 	};
 	this.saveLevel = function(level) {
-		db.run("UPDATE settings SET level = ?", [ level ], function(err) {
+		db.run("UPDATE settings SET level = ?", [level], function(err) {
 			if (err) {
 				console.error('Cards:db:', err);
 			}
@@ -112,7 +119,6 @@ function Cards(config, reader) {
 			});
 		});
 	};
-
 
 	this.getCard = function(id, cb) {
 		db.serialize(function() {
@@ -163,7 +169,6 @@ function Cards(config, reader) {
 	}, firstInterval);
 	setTimeout(that.updateCardTimers, 5000);
 
-
 	this.updateCard = function(id, details, cb) {
 		// if no details given then remove card
 		if (!details) {
@@ -195,7 +200,6 @@ function Cards(config, reader) {
 				console.error('Reader error:', e);
 			}
 
-
 			db.serialize(function() {
 				var isNew = false;
 				if (!card) {
@@ -221,7 +225,7 @@ function Cards(config, reader) {
 				console.log('Update card in database', id);
 
 				// only update level if it is more than 1, to stop a pattern card having its db level removed
-				if(details.level > 1) {
+				if (details.level > 1) {
 					card.level = details.level || card.level || 0;
 				}
 
@@ -352,7 +356,6 @@ function Cards(config, reader) {
 						});
 					}
 				}
-
 
 			});
 

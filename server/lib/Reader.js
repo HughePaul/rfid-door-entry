@@ -1,8 +1,11 @@
+'use strict';
+
 var sys = require('sys');
-var EventEmitter = require('events').EventEmitter;
+var EventEmitter = require('events')
+	.EventEmitter;
 var SerialPort = require('serialport');
 
-function Reader(config){
+function Reader(config) {
 	this.config = config;
 	this.readerThrottle = null;
 
@@ -13,10 +16,20 @@ function Reader(config){
 	this._lastid = '';
 	this._cards = {};
 
-	this._def('isOpen', function(){ return !! this.serialPort; });
-	this._def('level', function(){ return this._level; }, function(l){ this.setLevel(l); });
-	this._def('cards', function(){ return this._cards || {}; });
-	this._def('busy', function(){ return this._busy; });
+	this._def('isOpen', function() {
+		return !!this.serialPort;
+	});
+	this._def('level', function() {
+		return this._level;
+	}, function(l) {
+		this.setLevel(l);
+	});
+	this._def('cards', function() {
+		return this._cards || {};
+	});
+	this._def('busy', function() {
+		return this._busy;
+	});
 
 }
 sys.inherits(Reader, EventEmitter);
@@ -31,7 +44,7 @@ Reader.prototype._def = function(name, getter, setter) {
 
 Reader.prototype.retryOpen = function() {
 	var reader = this;
-	reader.readerThrottle = setTimeout(function(){
+	reader.readerThrottle = setTimeout(function() {
 		reader.readerThrottle = null;
 		reader.open();
 	}, 5000);
@@ -40,45 +53,50 @@ Reader.prototype.retryOpen = function() {
 Reader.prototype.open = function() {
 	var reader = this;
 
-	if(reader.readerThrottle) { return; }
+	if (reader.readerThrottle) {
+		return;
+	}
 
 	var rePort = new RegExp(reader.config.comPort);
 
 	var port;
-	var devs = require('fs').readdirSync('/dev/');
-	devs.forEach(function(dev){
-		if(rePort.test(dev)) {
+	var devs = require('fs')
+		.readdirSync('/dev/');
+	devs.forEach(function(dev) {
+		if (rePort.test(dev)) {
 			port = dev;
 		}
 	});
-	if(!port) {
+	if (!port) {
 		reader.retryOpen();
 		return console.log('Cannot guess reader serial port');
 	}
 
-	port = '/dev/'+port;
+	port = '/dev/' + port;
 
-	var data = "";
-	var parser = function (emitter, buffer) {
+	var data = '';
+	var parser = function(emitter, buffer) {
 		// check buffer isn't out of range
 		var bad = false;
-		for(var i=0; i<buffer.length; i++) {
-			if(buffer[i] < 10 || buffer[i] > 'Z') {
+		for (var i = 0; i < buffer.length; i++) {
+			if (buffer[i] < 10 || buffer[i] > 'Z') {
 				bad = true;
 			}
 		}
 
 		reader.emit('datain', buffer, bad);
 
-		if(bad) { return; }
+		if (bad) {
+			return;
+		}
 
 		// Collect data
 		data += buffer.toString('ascii');
 
 		// Split collected data by delimiter
-		var parts = data.split("\r\n");
+		var parts = data.split('\r\n');
 		data = parts.pop();
-		parts.forEach(function (part, i, array) {
+		parts.forEach(function(part, i, array) {
 			reader.decode(part);
 		});
 	};
@@ -86,11 +104,11 @@ Reader.prototype.open = function() {
 	try {
 		reader.serialPort = new SerialPort.SerialPort(port, {
 			baudrate: 9600,
-		    parser: parser
+			parser: parser
 		});
-	} catch(e) {
+	} catch (e) {
 		reader.serialPort = null;
-		reader.emit('error',e);
+		reader.emit('error', e);
 		return;
 	}
 
@@ -100,7 +118,7 @@ Reader.prototype.open = function() {
 		reader.getCards();
 	});
 
-	this.serialPort.on("close", function () {
+	this.serialPort.on('close', function() {
 		reader.serialPort = null;
 		reader.emit('close');
 		reader.reset();
@@ -111,7 +129,9 @@ Reader.prototype.open = function() {
 };
 
 Reader.prototype.close = function() {
-	if(!this.serialPort) { throw new Error("Not open"); }
+	if (!this.serialPort) {
+		throw new Error('Not open');
+	}
 	this.serialport.close();
 };
 
@@ -123,14 +143,17 @@ Reader.prototype.reset = function() {
 };
 
 Reader.prototype.write = function(command, id) {
-	this._commands.push({command: command, id: id});
+	this._commands.push({
+		command: command,
+		id: id
+	});
 	this._writeWaiting();
 };
 
 Reader.prototype._writeWaiting = function() {
-	if(this._commands.length && !this.busy && this.serialPort) {
+	if (this._commands.length && !this.busy && this.serialPort) {
 		var next = this._commands.shift();
-		var data = new Buffer('\r\n'+next.command+'\r\n', 'ascii');
+		var data = new Buffer('\r\n' + next.command + '\r\n', 'ascii');
 		this._busy = true;
 		this._lastid = next.id;
 		this.emit('dataout', data);
@@ -139,15 +162,17 @@ Reader.prototype._writeWaiting = function() {
 };
 
 Reader.prototype.decode = function(line) {
-	var reply = line.substr(0,1);
-	var id = line.substr(17,1)+'-'+line.substr(2, 14);
-	var level = parseInt(line.substr(16,1),16);
+	var reply = line.substr(0, 1);
+	var id = line.substr(17, 1) + '-' + line.substr(2, 14);
+	var level = parseInt(line.substr(16, 1), 16);
 
 	this._busy = false;
 
-	if(line === '') { return; }
+	if (line === '') {
+		return;
+	}
 
-	switch(reply) {
+	switch (reply) {
 		// reset
 		case '@':
 			this.reset();
@@ -155,135 +180,162 @@ Reader.prototype.decode = function(line) {
 			this.setLevel(this.level);
 			this.getCards();
 			break;
-		// error from reader
+			// error from reader
 		case '!':
-			var error = {code: line.substr(2)};
+			var error = {
+				code: line.substr(2)
+			};
 
-			if(error.code === '50') {
-				this.emit('notfound',this._lastid);
+			if (error.code === '50') {
+				this.emit('notfound', this._lastid);
 			} else {
-				switch(error.code) {
-					case '01': error.message = 'No card present'; break;
-					case '10': error.message = 'No ack from command write'; break;
-					case '20': error.message = 'No reply length'; break;
-					case '30': error.message = 'Incorrect reply command'; break;
-					case '40': error.message = 'Memory write error'; break;
-					case '41': error.message = 'Memory read error'; break;
-					case '42': error.message = 'Out of memory when adding record'; break;
-					case '43': error.message = 'End of memory when removing record'; break;
-					case '50': error.message = 'Record not found'; break;
+				switch (error.code) {
+					case '01':
+						error.message = 'No card present';
+						break;
+					case '10':
+						error.message = 'No ack from command write';
+						break;
+					case '20':
+						error.message = 'No reply length';
+						break;
+					case '30':
+						error.message = 'Incorrect reply command';
+						break;
+					case '40':
+						error.message = 'Memory write error';
+						break;
+					case '41':
+						error.message = 'Memory read error';
+						break;
+					case '42':
+						error.message = 'Out of memory when adding record';
+						break;
+					case '43':
+						error.message = 'End of memory when removing record';
+						break;
+					case '50':
+						error.message = 'Record not found';
+						break;
 				}
-				this.emit('error',error,this._lastid);
+				this.emit('error', error, this._lastid);
 			}
 			break;
-		// relay was manually activated
+			// relay was manually activated
 		case 'O':
 			this.emit('activate');
 			break;
-		// card list
+			// card list
 		case 'P':
-			if(id.length === 16) {
+			if (id.length === 16) {
 				this._cards[id] = level;
 				this._busy = true;
 			} else {
 				this.emit('cards', this.cards);
 			}
 			break;
-		// current access level
+			// current access level
 		case 'S':
-			this._level = parseInt(line.substr(2,1),16);
-			this.emit('level',this._level);
+			this._level = parseInt(line.substr(2, 1), 16);
+			this.emit('level', this._level);
 			break;
-		// a card was added
+			// a card was added
 		case 'A':
 			this._cards[id] = level;
-			this.emit('add',id,level);
+			this.emit('add', id, level);
 			break;
-		// a card was removed
+			// a card was removed
 		case 'R':
 			delete this._cards[id];
-			this.emit('remove',id,level);
+			this.emit('remove', id, level);
 			break;
-		// access granted
+			// access granted
 		case 'G':
 			this._cards[id] = level;
-			this.emit('access',id,level);
+			this.emit('access', id, level);
 			break;
-		// unknwon card
+			// unknwon card
 		case 'B':
-			this.emit('unknown',id);
+			this.emit('unknown', id);
 			break;
-		// card found but access level too low
+			// card found but access level too low
 		case 'N':
 			this._cards[id] = level;
-			this.emit('noaccess',id,level);
+			this.emit('noaccess', id, level);
 			break;
 		case '?':
 			this.emit('badcommand');
 			break;
 		default:
-			this.emit('error', 'Unknown reply: '+line);
+			this.emit('error', 'Unknown reply: ' + line);
 	}
 
 	this._writeWaiting();
 };
 
 Reader.prototype.setLevel = function(level, cb) {
-	if(!this.serialPort) { throw new Error("Not open"); }
-	if(level) {
+	if (!this.serialPort) {
+		throw new Error('Not open');
+	}
+	if (level) {
 		level = parseInt(level, 10);
-		level = level.toString(16).toUpperCase();
+		level = level.toString(16)
+			.toUpperCase();
 	} else {
 		level = '';
 	}
-	if(typeof cb === 'function') {
+	if (typeof cb === 'function') {
 		this.once('level', cb);
 	}
 	console.log('Set Level', level);
-	this.write('S '+level);
+	this.write('S ' + level);
 };
 
 Reader.prototype.activate = function(cb) {
-	if(!this.serialPort) { throw new Error("Not open"); }
-	if(typeof cb === 'function') {
+	if (!this.serialPort) {
+		throw new Error('Not open');
+	}
+	if (typeof cb === 'function') {
 		this.once('activate', cb);
 	}
 	this.write('O');
 };
 
 Reader.prototype.getCards = function(cb) {
-	if(!this.serialPort) { throw new Error("Not open"); }
+	if (!this.serialPort) {
+		throw new Error('Not open');
+	}
 	this._cards = {};
-	if(typeof cb === 'function') {
+	if (typeof cb === 'function') {
 		this.once('cards', cb);
 	}
 	this.write('P');
 };
 
-
 Reader.prototype.add = function(id, level) {
-	if(!this.serialPort) { throw new Error("Not open"); }
+	if (!this.serialPort) {
+		throw new Error('Not open');
+	}
 	level = parseInt(level, 10);
 	console.log('Reader add', id, level);
 	this._cards[id] = level;
-	var card = id.substr(2,14);
-	card += level.toString(16).substr(-1,1);
-	card += id.substr(0,1);
-	this.write('A '+card.toUpperCase(), id);
+	var card = id.substr(2, 14);
+	card += level.toString(16)
+		.substr(-1, 1);
+	card += id.substr(0, 1);
+	this.write('A ' + card.toUpperCase(), id);
 };
-
 
 Reader.prototype.remove = function(id) {
-	if(!this.serialPort) { throw new Error("Not open"); }
+	if (!this.serialPort) {
+		throw new Error('Not open');
+	}
 	console.log('Reader remove', id);
 	delete this._cards[id];
-	var card = id.substr(2,14);
+	var card = id.substr(2, 14);
 	card += '0';
-	card += id.substr(0,1);
-	this.write('R '+card.toUpperCase(), id);
+	card += id.substr(0, 1);
+	this.write('R ' + card.toUpperCase(), id);
 };
 
-
-
 module.exports = Reader;
-

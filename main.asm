@@ -31,6 +31,7 @@
 
 
 
+READER_ID	EQU		0x01
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -459,6 +460,11 @@ serial_process:
 	btfsc	STATUS, Z
 		goto serial_process_open
 
+	; if I(D) then send the reader id
+	addlw	'O'-'I'
+	btfsc	STATUS, Z
+		goto serial_process_id
+
 	; an unknown command was given. reply with a question mark
 	clrf	STATUS
 	call serial_start
@@ -618,7 +624,15 @@ serial_process_open:
 	movlw	'O'
 	goto serial_write_end
 
-
+; send the reader id	
+serial_process_id:
+	call serial_start
+	call serial_end
+	movlw	'I'
+	call serial_write_space
+	movlw	READER_ID
+	call serial_write_hex
+	goto serial_end
 
 
 

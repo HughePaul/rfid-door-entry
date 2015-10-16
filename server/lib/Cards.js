@@ -1,16 +1,16 @@
 'use strict';
 
 var path = require('path');
-var sys = require('sys');
+var util = require('util');
 var EventEmitter = require('events')
 	.EventEmitter;
 var sqlite3 = require('sqlite3')
 	.verbose();
 
-function Cards(config, reader) {
+function Cards(config, readers) {
 	var that = this;
 
-	that.reader = reader;
+	that.readers = readers;
 
 	that.level = 0;
 
@@ -61,7 +61,7 @@ function Cards(config, reader) {
 				if (err) {
 					console.log('Creating log table');
 					db.serialize(function() {
-						db.run("CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT, type STRING, desc TEXT, cardid TEXT, level INTEGER)", function(err) {
+						db.run("CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT, type STRING, desc TEXT, cardid TEXT, level INTEGER, reader INTEGER)", function(err) {
 							if (err) {
 								return console.error(err);
 							}
@@ -78,11 +78,12 @@ function Cards(config, reader) {
 			.toISOString()
 			.replace('T', ' ')
 			.replace(/\..*$/, '');
-		db.run("INSERT INTO log (timestamp, type, desc, cardid, level) VALUES (datetime('now'),?,?,?,?)", [
+		db.run("INSERT INTO log (timestamp, type, desc, cardid, level, reader) VALUES (datetime('now'),?,?,?,?, ?)", [
 			item.type,
 			item.desc,
 			item.cardid,
-			item.level
+			item.level,
+			item.reader
 		], function(err) {
 			if (err) {
 				console.error('Cards:db:', err);
@@ -107,7 +108,7 @@ function Cards(config, reader) {
 			count = 100;
 		}
 		db.serialize(function() {
-			db.all("SELECT id, timestamp, type, desc, cardid, level FROM log WHERE type != 'UPDATED' ORDER BY id DESC LIMIT $count", {
+			db.all("SELECT id, timestamp, type, desc, cardid, level, reader FROM log WHERE type != 'UPDATED' ORDER BY id DESC LIMIT $count", {
 				$count: count
 			}, function(err, items) {
 				if (err) {
@@ -151,10 +152,14 @@ function Cards(config, reader) {
 					if (current !== last) {
 						if (current) {
 							console.log('Enable card on timer', details.name, id);
-							that.reader.add(id, details.level);
+							that.readers.forEach(function(reader){
+	  						reader.add(id, details.level);
+  						});
 						} else {
 							console.log('Disable card on timer', id);
-							that.reader.add(id, 1);
+							that.readers.forEach(function(reader){
+	  						reader.add(id, 1);
+  						});
 						}
 					}
 				}
@@ -180,25 +185,29 @@ function Cards(config, reader) {
 				return console.error('Cards:db:', err);
 			}
 
-			try {
-				// if card is not on reader or level has changed then remove and add with new level
-				if (details && (!that.reader.cards[id] || that.reader.cards[id] !== details.level || (details.pattern && details.pattern !== card.pattern))) {
-					if (details.level > 1) {
-						if (details.pattern) {
-							var now = new Date();
-							var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
-							var current = (details.pattern.substr(hour, 1) === '#');
-							console.log(current ? 'Enabled' : 'Disable', 'card on reader', id, details.level);
-							that.reader.add(id, current ? details.level : 1);
-						} else {
-							console.log('Add card to reader', id, details.level);
-							that.reader.add(id, details.level);
+			that.readers.forEach(function(reader){
+
+				try {
+					// if card is not on reader or level has changed then remove and add with new level
+					if (details && (!reader.cards[id] || reader.cards[id] !== details.level || (details.pattern && details.pattern !== card.pattern))) {
+						if (details.level > 1) {
+							if (details.pattern) {
+								var now = new Date();
+								var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
+								var current = (details.pattern.substr(hour, 1) === '#');
+								console.log(current ? 'Enabled' : 'Disable', 'card on reader', reader.getId(), id, details.level);
+								reader.add(id, current ? details.level : 1);
+							} else {
+								console.log('Add card to reader', reader.getId(), id, details.level);
+								reader.add(id, details.level);
+							}
 						}
 					}
+				} catch (e) {
+					console.error('Reader error:', e);
 				}
-			} catch (e) {
-				console.error('Reader error:', e);
-			}
+
+			});
 
 			db.serialize(function() {
 				var isNew = false;
@@ -279,17 +288,19 @@ function Cards(config, reader) {
 					}
 				});
 			});
-			try {
-				if (that.reader.cards[id]) {
-					console.log('Remove card from reader', id);
-					that.reader.remove(id);
+			that.readers.forEach(function(reader){
+				try {
+					if (reader.cards[id]) {
+						console.log('Remove card from reader', reader.getId(), id);
+						reader.remove(id);
+					}
+					if (cb) {
+						cb(id, card);
+					}
+				} catch (e) {
+					console.error('Reader error:', e);
 				}
-				if (cb) {
-					cb(id, card);
-				}
-			} catch (e) {
-				console.error('Reader error:', e);
-			}
+			});
 			that.emit('card', id);
 		});
 		return that;
@@ -314,135 +325,143 @@ function Cards(config, reader) {
 		return that;
 	};
 
-	that.reader
-		.on('close', function() {
-			console.error('Reader port closed.');
-			that.reader.retryOpen();
-		})
-		.on('error', function(e) {
-			that.addLog({
-				type: 'ERROR',
-				desc: 'Reader error ' + e
-			});
-		})
-		.on('reset', function() {
-			that.addLog({
-				type: 'RESET',
-				desc: 'Reader reset'
-			});
-		})
-		.on('cards', function(readerCards) {
-			console.log('Syncing cards between db and reader');
+	that.readers.forEach(function(reader){
 
-			that.getCards(function(err, dbCards) {
-				if (err) {
-					return console.error(err);
-				}
-
-				var id;
-
-				for (id in dbCards) {
-					if (!readerCards[id]) {
-						console.log('Syncing: Adding card', id, 'to reader');
-						that.reader.add(id, dbCards[id].level);
-					}
-				}
-
-				for (id in readerCards) {
-					if (!dbCards[id]) {
-						console.log('Syncing: Adding card', id, 'to db');
-						that.updateCard(id, {
-							level: readerCards[id]
-						});
-					}
-				}
-
-			});
-
-		})
-		.on('access', function(id, level) {
-			that.addLog({
-				type: 'ACCESS',
-				desc: 'Access granted',
-				cardid: id,
-				level: level
-			});
-			//that.updateCard(id, {level: level});
-		})
-		.on('noaccess', function(id, level) {
-			that.addLog({
-				type: 'NOACCESS',
-				desc: 'Access denied',
-				cardid: id,
-				level: level
-			});
-			//that.updateCard(id, {level: level});
-		})
-		.on('unknown', function(id) {
-			that.addLog({
-				type: 'NOACCESS',
-				desc: 'Access denied',
-				cardid: id,
-				level: 0
-			});
-		})
-		.on('add', function(id, level) {
-			that.updateCard(id, {
-				level: level
-			}, function(id, card, isNew) {
+		reader
+			.on('close', function() {
+				console.error('Reader port closed.');
+				that.reader.retryOpen();
+			})
+			.on('error', function(e) {
 				that.addLog({
-					type: isNew ? 'ADDED' : 'UPDATED',
-					desc: JSON.stringify(card),
-					cardid: id,
-					level: card.level
+					type: 'ERROR',
+					desc: 'Reader error ' + e
 				});
-			});
-		})
-		.on('remove', function(id, level) {
-			that.updateCard(id, {
-				level: 0
-			}, function(id, card) {
+			})
+			.on('reset', function() {
 				that.addLog({
-					type: 'REMOVED',
-					desc: JSON.stringify(card),
-					cardid: id,
-					level: card.level
+					type: 'RESET',
+					desc: 'Reader reset'
 				});
-			});
-		})
-		.on('level', function(level) {
-			that.level = level;
-			//			that.addLog({type: 'LEVEL', desc: 'Security Level', level: level});
-			that.emit('level', level);
-			that.saveLevel(level);
-		})
-		.on('activate', function() {
-			//			that.addLog({type: 'OPENED', desc: 'Door Opened'});
-			that.emit('opened');
-		});
+			})
+			.on('cards', function(readerCards) {
+				console.log('Syncing cards between db and reader');
 
-	this.activate = function(loggedInUsername, cb) {
-		that.reader.activate(function() {
-			that.addLog({
-				type: 'OPENED',
-				desc: 'Door opened by ' + loggedInUsername
+				that.getCards(function(err, dbCards) {
+					if (err) {
+						return console.error(err);
+					}
+
+					var id;
+
+					for (id in dbCards) {
+						if (!readerCards[id]) {
+							console.log('Syncing: Adding card', id, 'to reader');
+							that.reader.add(id, dbCards[id].level);
+						}
+					}
+
+					for (id in readerCards) {
+						if (!dbCards[id]) {
+							console.log('Syncing: Adding card', id, 'to db');
+							that.updateCard(id, {
+								level: readerCards[id]
+							});
+						}
+					}
+
+				});
+
+			})
+			.on('access', function(id, level) {
+				that.addLog({
+					type: 'ACCESS',
+					desc: 'Access granted',
+					cardid: id,
+					level: level
+				});
+				//that.updateCard(id, {level: level});
+			})
+			.on('noaccess', function(id, level) {
+				that.addLog({
+					type: 'NOACCESS',
+					desc: 'Access denied',
+					cardid: id,
+					level: level
+				});
+				//that.updateCard(id, {level: level});
+			})
+			.on('unknown', function(id) {
+				that.addLog({
+					type: 'NOACCESS',
+					desc: 'Access denied',
+					cardid: id,
+					level: 0
+				});
+			})
+			.on('add', function(id, level) {
+				that.updateCard(id, {
+					level: level
+				}, function(id, card, isNew) {
+					that.addLog({
+						type: isNew ? 'ADDED' : 'UPDATED',
+						desc: JSON.stringify(card),
+						cardid: id,
+						level: card.level
+					});
+				});
+			})
+			.on('remove', function(id, level) {
+				that.updateCard(id, {
+					level: 0
+				}, function(id, card) {
+					that.addLog({
+						type: 'REMOVED',
+						desc: JSON.stringify(card),
+						cardid: id,
+						level: card.level
+					});
+				});
+			})
+			.on('level', function(level) {
+				that.level = level;
+				//			that.addLog({type: 'LEVEL', desc: 'Security Level', level: level});
+				that.emit('level', level);
+				that.saveLevel(level);
+			})
+			.on('activate', function() {
+				//			that.addLog({type: 'OPENED', desc: 'Door Opened'});
+				that.emit('opened');
 			});
-			if (cb) {
-				cb(loggedInUsername);
-			}
+	});
+
+	this.activate = function(readerId, loggedInUsername, cb) {
+		that.readers.forEach(function(reader){
+			if(reader.getId() != readerId) return;
+			reader.activate(function() {
+				that.addLog({
+					type: 'OPENED',
+					desc: 'Door opened by ' + loggedInUsername
+				});
+				if (cb) {
+					cb(readerId, loggedInUsername);
+				}
+			});
 		});
 	};
 
 	this.setLevel = function(level, loggedInUsername, cb) {
-		that.reader.setLevel(level, function(level) {
-			that.addLog({
-				type: 'LEVEL',
-				desc: 'Security level changed by ' + loggedInUsername,
-				level: level
+		that.readers.forEach(function(reader){
+			reader.setLevel(level, function(level) {
+				that.addLog({
+					type: 'LEVEL',
+					desc: 'Security level changed by ' + loggedInUsername,
+					level: level
+				});
+				if (cb) {
+					cb(level, loggedInUsername);
+				}
 			});
-			if (cb) {
-				cb(level, loggedInUsername);
-			}
 		});
 	};
 
@@ -451,6 +470,6 @@ function Cards(config, reader) {
 		desc: 'Server started'
 	});
 }
-sys.inherits(Cards, EventEmitter);
+util.inherits(Cards, EventEmitter);
 
 module.exports = Cards;

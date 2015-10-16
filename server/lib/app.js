@@ -10,11 +10,14 @@ var config = require('./config')
 
 // Load Reader
 var Reader = require('./Reader');
-var reader = new Reader(config);
+var readers = [];
+config.comPorts.forEach(function(comPortPattern) {
+	readers.push(new Reader(comPortPattern));
+});
 
 // Load card database
 var Cards = require('./Cards');
-var cards = new Cards(config, reader);
+var cards = new Cards(config, readers);
 
 // Load push module
 var Push = require('./Push');
@@ -79,7 +82,6 @@ if (config.ssl) {
 // Listen for sockets
 var socketio = require('socket.io');
 var io = socketio.listen(server);
-io.set('log level', 1);
 
 function userCookie(username) {
 	if (!config.users[username]) {
@@ -214,8 +216,10 @@ io.sockets.on('connection', function(socket) {
 
 });
 
-// open reader
-reader.open();
+// open readers
+readers.forEach(function(reader) {
+	reader.open();
+});
 
 // start server listening
 server.listen(config.port);

@@ -1,16 +1,17 @@
 'use strict';
 
-var sys = require('sys');
+var util = require('util');
 var EventEmitter = require('events')
 	.EventEmitter;
 var SerialPort = require('serialport');
 
-function Reader(config) {
-	this.config = config;
+function Reader(comPortPattern) {
+	this.comPortPattern = comPortPattern;
 	this.readerThrottle = null;
 
 	this.serialPort = null;
 
+	this._readerId = 0;
 	this._busy = false;
 	this._commands = [];
 	this._lastid = '';
@@ -32,7 +33,7 @@ function Reader(config) {
 	});
 
 }
-sys.inherits(Reader, EventEmitter);
+util.inherits(Reader, EventEmitter);
 
 Reader.prototype._def = function(name, getter, setter) {
 	Object.defineProperty(this, name, {
@@ -57,7 +58,7 @@ Reader.prototype.open = function() {
 		return;
 	}
 
-	var rePort = new RegExp(reader.config.comPort);
+	var rePort = new RegExp(reader.comPortPattern);
 
 	var port;
 	var devs = require('fs')
@@ -69,7 +70,7 @@ Reader.prototype.open = function() {
 	});
 	if (!port) {
 		reader.retryOpen();
-		return console.log('Cannot guess reader serial port');
+		return console.log('Cannot guess reader serial port ' + reader.comPortPattern);
 	}
 
 	port = '/dev/' + port;
@@ -114,6 +115,7 @@ Reader.prototype.open = function() {
 
 	this.serialPort.on('open', function() {
 		reader.emit('open', port);
+		reader.getIdFromReader();
 		reader.setLevel(reader.level);
 		reader.getCards();
 	});
@@ -136,6 +138,7 @@ Reader.prototype.close = function() {
 };
 
 Reader.prototype.reset = function() {
+	this._readerId = 0;
 	this._cards = {};
 	this._level = 0;
 	this._busy = false;
@@ -221,6 +224,11 @@ Reader.prototype.decode = function(line) {
 				this.emit('error', error, this._lastid);
 			}
 			break;
+			// id from reader
+		case 'I':
+			this._readerId = parseInt(line.substr(2, 2), 16);
+			this.emit('id', this._readerId);
+			break;
 			// relay was manually activated
 		case 'O':
 			this.emit('activate');
@@ -289,6 +297,21 @@ Reader.prototype.setLevel = function(level, cb) {
 	}
 	console.log('Set Level', level);
 	this.write('S ' + level);
+};
+
+Reader.prototype.getIdFromReader = function(cb) {
+	if (!this.serialPort) {
+		throw new Error('Not open');
+	}
+	if (typeof cb === 'function') {
+		this.once('id', cb);
+	}
+	console.log('Get Id');
+	this.write('I');
+};
+
+Reader.prototype.getId = function() {
+	return this._readerId;
 };
 
 Reader.prototype.activate = function(cb) {

@@ -7,3 +7,8 @@ config.json
 DoorEntryExtension.pem
 DoorEntryExtension.crx
 DoorEntryExtension.zip
+/hardware/nbproject/private/
+/hardware/entry.X/nbproject/private/
+/hardware/entry.X/build/default/
+/hardware/entry.X/dist/default/
+.map

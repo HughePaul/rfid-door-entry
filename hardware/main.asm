@@ -7,11 +7,11 @@
 ;                                                                     *
 ;    Author:        Paul Winkler                                      *
 ;    Company:       HughePaul                                         *
-;                                                                     * 
+;                                                                     *
 ;                                                                     *
 ;**********************************************************************
 ;                                                                     *
-;    Files Required: P16F627.INC                                      *
+;    Files Required: P16F628A.INC                                      *
 ;                                                                     *
 ;**********************************************************************
 ;                                                                     *
@@ -20,9 +20,9 @@
 ;**********************************************************************
 
 
-	list      p=16f628a            ; list directive to define processor
+	list      p=16f628A            ; list directive to define processor
 	#include <p16f628a.inc>        ; processor specific variable definitions
-	
+
 	__CONFIG _CP_OFF & _WDT_ON & _BODEN_ON & _PWRTE_ON & _XT_OSC & _MCLRE_OFF & _LVP_OFF
 
 ; '__CONFIG' directive is used to embed configuration data within .asm file.
@@ -37,7 +37,7 @@ READER_ID	EQU		0x01
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; VARIABLE DEFINITIONS
 
-w_temp        EQU     0x70        ; variable used for context saving 
+w_temp        EQU     0x70        ; variable used for context saving
 status_temp   EQU     0x71        ; variable used for context saving
 fsr_temp      EQU     0x72        ; variable used for context saving
 
@@ -143,6 +143,7 @@ security_level	EQU		0x79
 timer_counter	EQU		0x7A
 programming_mode	EQU		0x7B
 print_memory	EQU		0x7C
+reed_state		EQU		0x7D
 
 debug_reg	EQU		0x7F
 
@@ -151,6 +152,7 @@ OUT_GOOD	EQU	0
 OUT_BAD		EQU	1
 OUT_ERROR	EQU	2
 OUT_DOOR	EQU	3
+IN_REED		EQU	4
 
 ADDR_RFID_W	EQU	b'10100000'
 ADDR_RFID_R	EQU	b'10100001'
@@ -165,8 +167,8 @@ ADDR_MEM_R	EQU	b'10100111'
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; RESET
 
-		ORG     0x000             ; processor reset vector
-		goto    main              ; go to beginning of program
+	ORG     0x000             ; processor reset vector
+	goto    main              ; go to beginning of program
 
 
 
@@ -174,15 +176,15 @@ ADDR_MEM_R	EQU	b'10100111'
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; INTERUPT HANDLER
 
-		ORG     0x004             ; interrupt vector location
+	ORG     0x004             ; interrupt vector location
 
 		; interup header
 
-		movwf   w_temp            ; save off current W register contents
-		movf	STATUS,w          ; move status register into W register
-		movwf	status_temp       ; save off contents of STATUS register
-		movfw	FSR
-		movwf	fsr_temp
+	movwf   w_temp            ; save off current W register contents
+	movf	STATUS,w          ; move status register into W register
+	movwf	status_temp       ; save off contents of STATUS register
+	movfw	FSR
+	movwf	fsr_temp
 
 		; interupt code
 
@@ -193,14 +195,14 @@ ADDR_MEM_R	EQU	b'10100111'
 
 	; check for serial errors
 	btfss	RCSTA, FERR
-		goto int_no_serial_frame_error
+	goto int_no_serial_frame_error
 	bcf		RCSTA, CREN
 	bsf		RCSTA, CREN
 	goto int_serial_in
 int_no_serial_frame_error:
 
 	btfss	RCSTA, OERR
-		goto int_no_serial_overrun_error
+	goto int_no_serial_overrun_error
 	bcf		RCSTA, CREN
 	bsf		RCSTA, CREN
 int_no_serial_overrun_error:
@@ -208,7 +210,7 @@ int_no_serial_overrun_error:
 int_serial_in:
 	; check if there is any byte to read
 	btfss	PIR1, RCIF
-		goto int_no_serial_in
+	goto int_no_serial_in
 	banksel	RCSTA
 	; read byte
 	movfw	serial_in_write
@@ -227,10 +229,10 @@ int_serial_in:
 	; if 0x0A or 0x0D then send for processing
 	addlw	-d'10'
 	btfsc	STATUS, Z
-		call serial_process	
+	call serial_process
 	addlw	-d'3'
 	btfsc	STATUS, Z
-		call serial_process	
+	call serial_process
 int_no_serial_in:
 
 
@@ -240,12 +242,12 @@ int_serial_out:
 	; check if we can send
 	banksel	PIR1
 	btfss	PIR1, TXIF
-		goto int_no_serial_out
+	goto int_no_serial_out
 	; check if there are any bytes to send
 	movfw	serial_out_read
 	subwf	serial_out_write, w
 	btfss	STATUS, Z
-		goto int_serial_out_send
+	goto int_serial_out_send
 	; if not then disable send interupt and skip sending
 	banksel	PIE1
 	bcf		PIE1, TXIE
@@ -262,9 +264,9 @@ int_serial_out_send:
 	incf	serial_out_read, f
 	movfw	serial_out_read
 	btfss	serial_out_read, 5
-		andlw	0x1F
+	andlw	0x1F
 	btfsc	serial_out_read, 5
-		andlw	0x2F
+	andlw	0x2F
 	movwf	serial_out_read
 int_no_serial_out:
 
@@ -275,7 +277,7 @@ int_timer:
 ; check timer1 overflow
 	banksel	PIR1
 	btfss	PIR1, TMR1IF
-		goto int_no_timer
+	goto int_no_timer
 	; update timer registers
 	call update_timer
 	; increment timer
@@ -283,9 +285,9 @@ int_timer:
 
 int_timer_flash:
 	btfss	programming_mode, 0
-		goto int_timer_no_flash
+	goto int_timer_no_flash
 	btfsc	timer_counter, 0
-		goto int_timer_flash_on
+	goto int_timer_flash_on
 	bcf		PORTA, OUT_ERROR
 	goto int_timer_no_flash
 int_timer_flash_on:
@@ -298,7 +300,7 @@ int_timer_leds:
 	movfw	timer_counter
 	addlw	-D'6'
 	btfss	STATUS, Z
-		goto int_no_timer_leds
+	goto int_no_timer_leds
 	clrf		PORTA
 int_no_timer_leds:
 
@@ -308,7 +310,7 @@ int_timer_programming:
 	movfw	timer_counter
 	addlw	-D'10'
 	btfss	STATUS, Z
-		goto	int_no_timer_programming
+	goto	int_no_timer_programming
 
 	; turn programming mode off
 	clrf	PORTA
@@ -322,13 +324,13 @@ int_no_timer:
 
 		; interupt trailer
 
-		movfw	fsr_temp
-		movwf	FSR
-		movf    status_temp,w     ; retrieve copy of STATUS register
-		movwf	STATUS            ; restore pre-isr STATUS register contents
-		swapf   w_temp,f
-		swapf   w_temp,w          ; restore pre-isr W register contents
-		retfie                    ; return from interrupt
+	movfw	fsr_temp
+	movwf	FSR
+	movf    status_temp,w     ; retrieve copy of STATUS register
+	movwf	STATUS            ; restore pre-isr STATUS register contents
+	swapf   w_temp,f
+	swapf   w_temp,w          ; restore pre-isr W register contents
+	retfie                    ; return from interrupt
 
 
 
@@ -364,7 +366,7 @@ hex_lookup:
 
 
 
-; convert 2 caps hex chars starting at FSR to a byte in W, incrementing FSR 
+; convert 2 caps hex chars starting at FSR to a byte in W, incrementing FSR
 indf_dec_lookup:
 	movfw	INDF
 	call dec_lookup
@@ -375,7 +377,7 @@ indf_dec_lookup:
 	call dec_lookup
 	iorwf	serial_buffer, w
 	incf	FSR, f
-	return	
+	return
 
 
 
@@ -430,40 +432,40 @@ serial_process:
 	movfw	serial_in00
 	addlw	-D'10'
 	btfsc	STATUS, Z
-		return
+	return
 	addlw	D'10'-D'13'
 	btfsc	STATUS, Z
-		return
+	return
 
 	; if A(DD) then add this id at this level
 	addlw	D'13'-'A'
 	btfsc	STATUS, Z
-		goto serial_process_add
+	goto serial_process_add
 
 	; if R(EMOVE) then remove this id at this level
 	addlw	'A'-'R'
 	btfsc	STATUS, Z
-		goto serial_process_rem
+	goto serial_process_rem
 
 	; if P(RINT) then print all entries
 	addlw	'R'-'P'
 	btfsc	STATUS, Z
-		goto serial_process_print
+	goto serial_process_print
 
 	; if S(ECURITY_LEVEL) then remove this id at this level
 	addlw	'P'-'S'
 	btfsc	STATUS, Z
-		goto serial_process_sec
+	goto serial_process_sec
 
 	; if O(PEN) then open the door
 	addlw	'S'-'O'
 	btfsc	STATUS, Z
-		goto serial_process_open
+	goto serial_process_open
 
 	; if I(D) then send the reader id
 	addlw	'O'-'I'
 	btfsc	STATUS, Z
-		goto serial_process_id
+	goto serial_process_id
 
 	; an unknown command was given. reply with a question mark
 	clrf	STATUS
@@ -511,11 +513,11 @@ serial_process_add:
 
 	andlw	0xFF	; if found then overwrite
 	btfsc	STATUS, Z
-    	goto data_add_write
+	goto data_add_write
 
 	addlw	-D'2'	; if not found then add
 	btfsc	STATUS, Z
-    	goto data_add_direct
+	goto data_add_direct
 
 	; a memory error occured. report ! 43
 	movlw	0x03
@@ -552,11 +554,11 @@ serial_process_rem:
 
 	andlw	0xFF	; if found then remove by overwriting with zeros
 	btfsc	STATUS, Z
-		goto data_remove
+	goto data_remove
 
 	addlw	-D'2'	; if not found then report error ! 50
 	btfsc	STATUS, Z
-		goto error_50
+	goto error_50
 
 	; a memory error occured. report ! 43
 	movlw	0x03
@@ -571,7 +573,7 @@ serial_process_sec:
 	movfw	serial_in01
 	sublw	' ' ; check for space
 	btfss	STATUS, Z
-		goto serial_process_sec_print
+	goto serial_process_sec_print
 
 	; check for operand
 	movfw	serial_in02
@@ -580,7 +582,7 @@ serial_process_sec:
 	; if zero or not recognised then just print
 	andlw	0xFF
 	btfsc	STATUS, Z
-		goto serial_process_sec_print
+	goto serial_process_sec_print
 
 	; set the security level in memory
 	movwf	security_level
@@ -595,9 +597,7 @@ serial_process_sec_print:
 	call serial_start
 	call serial_end
 	movlw	'S'
-	call serial_write
-	movlw	' '
-	call serial_write
+	call serial_write_space
 	swapf	security_level, w   ; get the high nibble
 	call hex_lookup
 	goto serial_write_end
@@ -607,7 +607,7 @@ serial_process_print:
 	incf	print_memory, f
 	return
 
-; open the door		
+; open the door
 serial_process_open:
 	clrf	STATUS
 	call	unset_timer
@@ -624,7 +624,7 @@ serial_process_open:
 	movlw	'O'
 	goto serial_write_end
 
-; send the reader id	
+; send the reader id
 serial_process_id:
 	call serial_start
 	call serial_end
@@ -676,7 +676,7 @@ main:
 	banksel	CCP1CON
 	movlw	b'00000000'
 	movwf	CCP1CON
-	
+
 ; set up serial port
 
 	banksel	SPBRG
@@ -706,6 +706,7 @@ main:
 	clrf	serial_out_write
 
 	clrf	card_state;
+	clrf	reed_state;
 
 
 	; test leds
@@ -717,7 +718,7 @@ main:
 test_loop:
 	clrwdt
 	decfsz	card_state, f
-		goto test_loop
+	goto test_loop
 
 	; clear leds
 	clrf	PORTA
@@ -747,20 +748,37 @@ main_loop:
 	; if the print memory flag has been set then do that
 	movfw	print_memory
 	btfss	STATUS, Z
-		call main_print_memory
+	call main_print_memory
 
+	; detect reed edge
+	banksel	PORTA
+	movfw	PORTA
+	xorwf	reed_state, w
+	andlw	b'00010000'
+	btfsc	STATUS, Z
+	goto main_end_reed
+
+	; save new state
+	movfw	PORTA
+	andlw	b'00011000'
+	movwf	reed_state
+	call main_print_reed
+
+main_end_reed:
+	
 	; test if we had an unknown card and if so don't allow another card to be presented until the led is cleared
+	banksel	PORTA
 	btfsc	PORTA, OUT_BAD
-		goto main_loop
+	goto main_loop
 
 	; check proximity flag falling edge
 	banksel	PORTB
 	btfsc	PORTB, 5
-		goto main_no_card
+	goto main_no_card
 
 	; test if a card has been newly presented
 	btfss	card_state, 0
-		call read_card
+	call read_card
 
 	goto main_loop
 
@@ -794,8 +812,23 @@ unset_timer:
 	clrf	PORTA
 	return
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; PRINT REED
+main_print_reed:
+	clrf	STATUS
+	; print out current door reed state
+	call serial_start
+	call serial_end
+	movlw	'D'
+	call serial_write_space
+	movlw	'M' ; door opened manually
+	btfsc	reed_state, OUT_DOOR
+	movlw	'R' ; door opened by reader
+	btfss	reed_state, IN_REED
+	movlw	'C' ; door closed
+	goto serial_write_end
 
-
+	
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; PRINT MEMORY
 
@@ -854,15 +887,15 @@ rfid_write:
 	movlw	ADDR_RFID_W ; address write
 	call I2c_send
 	btfss	STATUS, Z
-		goto error_10
+	goto error_10
 	movlw	D'1'	; length = 1
 	call I2c_send
 	btfss	STATUS, Z
-		goto error_10
+	goto error_10
 	movlw	0x01	; command = 0x01
 	call I2c_send
 	btfss	STATUS, Z
-		goto error_10
+	goto error_10
 	call I2c_stop
 
 	; read result from rfid reader
@@ -873,7 +906,7 @@ rfid_read:
 	movlw	ADDR_RFID_R ; address read
 	call I2c_send
 	btfsc	STATUS, Z
-		goto rfid_read_continue
+	goto rfid_read_continue
 
 	call I2c_stop
 	goto rfid_read ; retry
@@ -884,7 +917,7 @@ rfid_read_continue:
 
 	; check if we have any length
 	btfsc	STATUS, Z
-		goto error_20
+	goto error_20
 
 	clrf	rfid_pos
 rfid_read_loop:
@@ -900,9 +933,9 @@ rfid_read_loop:
 	; read byte
 	call I2c_recv
 	movwf	INDF
-	
+
 	decfsz	rfid_len, f
-		goto rfid_read_loop
+	goto rfid_read_loop
 
 rfid_read_no_len:
 	call I2c_noack
@@ -914,10 +947,10 @@ rfid_read_no_len:
 	movfw	rfid_cmd
 	addlw	-D'1'
 	btfss	STATUS, Z
-		goto error_30
+	goto error_30
 	movfw	rfid_status
 	btfss	STATUS, Z
-		goto error_xx
+	goto error_xx
 
 
 	; copy bytes
@@ -942,11 +975,11 @@ rfid_read_no_len:
 
 	andlw	0xFF	; return 0 found
 	btfsc	STATUS, Z
-		goto rfid_found
+	goto rfid_found
 
 	addlw	-D'2'	; return 2 is end of data, ie not found
 	btfsc	STATUS, Z
-		goto rfid_not_found
+	goto rfid_not_found
 
 	; a memory error occured. report ! 41
 	movlw	0x01
@@ -965,24 +998,24 @@ rfid_found:
 	movfw	security_level
 	subwf	mem_match7, w
 	btfss	STATUS, C
-		goto rfid_noperm
+	goto rfid_noperm
 
 	; check if we should be turning programming mode on
 	movfw	mem_read7
 	andlw	0xF0
 	xorlw	0xF0
 	btfsc	STATUS, Z
-		goto enable_programming
+	goto enable_programming
 
 	; if already in programming mode then remove the card
 	btfss	programming_mode, 0
-		goto data_win
+	goto data_win
 	goto data_remove
 
 rfid_noperm:
 	; if already in programming mode then remove the card
 	btfss	programming_mode, 0
-		goto data_noperm
+	goto data_noperm
 	goto data_remove
 
 enable_programming:
@@ -993,7 +1026,7 @@ enable_programming:
 rfid_not_found:
 	; if in programming mode then add this item at current security level
 	btfss	programming_mode, 0
-		goto data_fail
+	goto data_fail
 	goto data_add
 
 
@@ -1006,7 +1039,7 @@ rfid_not_found:
 data_win:
 	; if the light is still green then don't accept another entry
 	btfsc	PORTA, OUT_GOOD
-		return
+	return
 	; turn on good access light
 	clrf	STATUS
 	bsf		PORTA, OUT_GOOD
@@ -1080,10 +1113,10 @@ data_add_direct:
 
 	andlw	0xFF	; return 0 is deleted slot found
 	btfsc	STATUS, Z
-		goto data_add_write
+	goto data_add_write
 	addlw	-D'2'	; return 2 is end of data
 	btfsc	STATUS, Z
-		goto data_add_write
+	goto data_add_write
 
 	; a memory error occured. report ! 42
 	movlw	0x02
@@ -1094,7 +1127,7 @@ data_add_write:
 	call	mem_write
 	andlw	0xFF
 	btfss	STATUS, Z
-		goto error_4x ; a memory error occured
+	goto error_4x ; a memory error occured
 
 	; turn on both lights
 	bsf		PORTA, OUT_GOOD
@@ -1126,7 +1159,7 @@ data_remove:
 	call	mem_write
 	andlw	0xFF
 	btfss	STATUS, Z
-		goto error_4x ; a memory error occured
+	goto error_4x ; a memory error occured
 
 	; turn on both lights
 	bsf		PORTA, OUT_BAD
@@ -1276,7 +1309,7 @@ serial_start:
 	movfw	serial_out_read
 	subwf	serial_out_write, w
 	btfss	STATUS, Z
-		goto serial_start_write_no_clear
+	goto serial_start_write_no_clear
 	clrf	serial_out_read
 	clrf	serial_out_write
 serial_start_write_no_clear:
@@ -1298,9 +1331,9 @@ serial_write:
 	incf	serial_out_write, f
 	movfw	serial_out_write
 	btfss	serial_out_write, 6
-		andlw	0x1F
+	andlw	0x1F
 	btfsc	serial_out_write, 6
-		andlw	0x2F
+	andlw	0x2F
 	movwf	serial_out_write
 	addlw	serial_out00
 	movwf	FSR
@@ -1330,7 +1363,7 @@ serial_end:
 	call serial_write
 	movlw	0x0A
 	goto serial_write
-	
+
 
 
 
@@ -1349,27 +1382,27 @@ mem_read_bank:
 	call I2c_start
 	movlw	ADDR_MEM_W
 	btfsc	mem_hi, 7	; test which bank we are addressing
-		iorlw	b'00001000'
+	iorlw	b'00001000'
 	call I2c_send
 	btfss	STATUS, Z
-		goto mem_fail
+	goto mem_fail
 	movfw	mem_hi
 	andlw	0x7F ; sanity align
 	call I2c_send
 	btfss	STATUS, Z
-		goto mem_fail
+	goto mem_fail
 	movfw	mem_lo
 	andlw	0xF8 ; sanity align
 	call I2c_send
 	btfss	STATUS, Z
-		goto mem_fail
+	goto mem_fail
 
 	; start read
 	call I2c_start
 	movlw	ADDR_MEM_R
 	call I2c_send
 	btfss	STATUS, Z
-		goto mem_fail
+	goto mem_fail
 
 mem_read_record:
 	clrwdt
@@ -1384,13 +1417,13 @@ mem_read_byte:
 	movwf	INDF
 	incf	FSR, f
 	decfsz	mem_pos, f
-		goto mem_read_next_byte
+	goto mem_read_next_byte
 
 mem_read_end_check:
 	; check if last byte was 0xFF
 
 	incfsz	mem_read7, w
-		goto mem_read_check_or_print
+	goto mem_read_check_or_print
 
 	;we have reached the end of the data
 	call I2c_noack
@@ -1405,7 +1438,7 @@ mem_read_check_or_print:
 	; check if we should match or print
 	incf	mem_match7, w
 	btfss	STATUS, Z
-		goto mem_read_check
+	goto mem_read_check
 
 	; check it is not an empty slot
 	movfw	mem_read0
@@ -1417,14 +1450,14 @@ mem_read_check_or_print:
 	iorwf	mem_read6, w
 	iorwf	mem_read7, w
 	btfsc	STATUS, Z
-		goto mem_read_no_match
+	goto mem_read_no_match
 
 	; wait for serial out buffer to be cleared
 mem_print_out_wait:
 	movfw	serial_out_read
 	subwf	serial_out_write, w
 	btfss	STATUS, Z
-		goto mem_print_out_wait
+	goto mem_print_out_wait
 
 	call serial_start
 	movlw	'P'
@@ -1439,36 +1472,36 @@ mem_read_check:
 	movfw	mem_read0
 	subwf	mem_match0, w
 	btfss	STATUS, Z
-		goto mem_read_no_match
+	goto mem_read_no_match
 	movfw	mem_read1
 	subwf	mem_match1, w
 	btfss	STATUS, Z
-		goto mem_read_no_match
+	goto mem_read_no_match
 	movfw	mem_read2
 	subwf	mem_match2, w
 	btfss	STATUS, Z
-		goto mem_read_no_match
+	goto mem_read_no_match
 	movfw	mem_read3
 	subwf	mem_match3, w
 	btfss	STATUS, Z
-		goto mem_read_no_match
+	goto mem_read_no_match
 	movfw	mem_read4
 	subwf	mem_match4, w
 	btfss	STATUS, Z
-		goto mem_read_no_match
+	goto mem_read_no_match
 	movfw	mem_read5
 	subwf	mem_match5, w
 	btfss	STATUS, Z
-		goto mem_read_no_match
+	goto mem_read_no_match
 	movfw	mem_read6
 	subwf	mem_match6, w
 	btfss	STATUS, Z
-		goto mem_read_no_match
+	goto mem_read_no_match
 	movfw	mem_read7
 	andlw	0x0f ; mask out security level bits for comparison
 	subwf	mem_match7, w
 	btfss	STATUS, Z
-		goto mem_read_no_match
+	goto mem_read_no_match
 
 	; we have found a correct match
 	call I2c_noack
@@ -1480,14 +1513,14 @@ mem_read_no_match:
 	movlw	D'8'
 	addwf	mem_lo, f
 	btfss	STATUS, Z
-		goto mem_read_next_record ; no need to check bank, as hi hasn't rolled over
+	goto mem_read_next_record ; no need to check bank, as hi hasn't rolled over
 	incf	mem_hi, f
 
 	; check if we have rolled over to the next bank
 	movfw	mem_hi
 	andlw	b'01111111'
 	btfss	STATUS, Z
-		goto mem_read_next_record
+	goto mem_read_next_record
 	call I2c_noack
 	call I2c_stop
 	goto mem_read_bank ; resend the bank address command
@@ -1508,22 +1541,22 @@ mem_write:
 	call I2c_start
 	movlw	ADDR_MEM_W
 	btfsc	mem_hi, 7	; test which bank we are addressing
-		iorlw	b'00001000'
+	iorlw	b'00001000'
 	movwf	mem_command
 	call I2c_send
 	btfss	STATUS, Z
-		goto mem_fail
+	goto mem_fail
 
 	movfw	mem_hi
 	andlw	0x7F ; sanity align
 	call I2c_send
 	btfss	STATUS, Z
-		goto mem_fail
+	goto mem_fail
 	movfw	mem_lo
 	andlw	0xF8 ; sanity align
 	call I2c_send
 	btfss	STATUS, Z
-		goto mem_fail
+	goto mem_fail
 
 mem_write_record:
 	; start write of 8 bytes
@@ -1536,10 +1569,10 @@ mem_write_byte:
 	movfw	INDF
 	call I2c_send
 	btfss	STATUS, Z
-		goto mem_fail
+	goto mem_fail
 	incf	FSR, f
 	decfsz	mem_pos, f
-		goto mem_write_byte
+	goto mem_write_byte
 
 	call I2c_stop
 
@@ -1548,7 +1581,7 @@ mem_write_wait:
 	movfw	mem_command
 	call I2c_send
 	btfss	STATUS, Z
-		goto mem_write_wait
+	goto mem_write_wait
 
 	call I2c_stop
 	retlw 0x00
@@ -1610,9 +1643,9 @@ I2c_pause_loop:
 I2c_pause_inner_loop:
 	addlw	-D'1'
 	btfss	STATUS, Z
-		goto I2c_pause_inner_loop
+	goto I2c_pause_inner_loop
 	decfsz	i2c_state, f
-		goto I2c_pause_loop
+	goto I2c_pause_loop
 	return
 
 
@@ -1650,7 +1683,7 @@ I2c_send_loop:
 	SCL_LOW
 	SWAIT
 	btfss	i2c_byte, 7
-		goto I2c_send_low
+	goto I2c_send_low
 	SDA_HIGH
 	goto I2c_send_high
 I2c_send_low:
@@ -1661,7 +1694,7 @@ I2c_send_high:
 	SWAIT
 	rlf		i2c_byte, f
 	decfsz	i2c_state, f
-		goto I2c_send_loop
+	goto I2c_send_loop
 	; listen for ACK
 	SCL_LOW
 	SWAIT
@@ -1672,7 +1705,7 @@ I2c_send_high:
 	;bcf		SDI
 	clrw
 	btfsc	SDI
-		addlw	D'1'
+	addlw	D'1'
 	SWAIT
 	SCL_LOW
 	return	; ack is status Z bit, 1 is ack, 0 is noack
@@ -1690,14 +1723,14 @@ I2c_recv_loop:
 	SWAIT
 	rlf		i2c_byte, f
 	btfss	SDI
-		goto I2c_recv_low
+	goto I2c_recv_low
 	bsf		i2c_byte, 0
 	goto I2c_recv_high
 I2c_recv_low:
 	bcf		i2c_byte, 0
 I2c_recv_high:
 	decfsz	i2c_state, f
-		goto I2c_recv_loop
+	goto I2c_recv_loop
 	movfw	i2c_byte
 	return
 

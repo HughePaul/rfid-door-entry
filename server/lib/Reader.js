@@ -9,21 +9,26 @@ var fs = require('fs');
 class Reader extends EventEmitter {
 	constructor(comPortPattern) {
 		super();
-		this.comPortPattern = comPortPattern;
-		this.readerThrottle = null;
-
-		this.serialPort = null;
-
+		this._comPortPattern = comPortPattern;
+		this._serialPort = null;
+		this._readerThrottleTimer = null;
 		this._readerId = 0;
+		this._lastid = '';
+
+		this.reset();
+	}
+
+	reset() {
+		this._data = '';
+		this._readerId = 0;
+		this._cards = {};
+		this._level = 0;
 		this._busy = false;
 		this._commands = [];
-		this._lastid = '';
-		this._cards = {};
-
 	}
 
 	get isOpen() {
-		return !!this.serialPort;
+		return !!this._serialPort;
 	}
 
 	get level() {
@@ -43,37 +48,13 @@ class Reader extends EventEmitter {
 	}
 
   retryOpen() {
-		this.readerThrottle = setTimeout(() => {
-			this.readerThrottle = null;
+		this._readerThrottleTimer = setTimeout(() => {
+			this._readerThrottleTimer = null;
 			this.open();
 		}, 5000);
 	}
 
-  open() {
-		var reader = this;
-
-		if (reader.readerThrottle) {
-			return;
-		}
-
-		var rePort = new RegExp(reader.comPortPattern);
-
-		var port;
-		var devs = fs.readdirSync('/dev/');
-		devs.forEach(function(dev) {
-			if (rePort.test(dev)) {
-				port = dev;
-			}
-		});
-		if (!port) {
-			reader.retryOpen();
-			return console.log('Cannot guess reader serial port ' + reader.comPortPattern);
-		}
-
-		port = '/dev/' + port;
-
-		var data = '';
-		var parser = function(emitter, buffer) {
+	_parser(emitter, buffer) {
 			// check buffer isn't out of range
 			var bad = false;
 			for (var i = 0; i < buffer.length; i++) {
@@ -82,7 +63,7 @@ class Reader extends EventEmitter {
 				}
 			}
 
-			reader.emit('datain', buffer, bad);
+			this.emit('datain', buffer, bad);
 
 			if (bad) {
 				return;
@@ -94,53 +75,71 @@ class Reader extends EventEmitter {
 			// Split collected data by delimiter
 			var parts = data.split('\r\n');
 			data = parts.pop();
-			parts.forEach(function(part, i, array) {
-				reader.decode(part);
+			parts.forEach((part) => {
+				this._decode(part);
 			});
 		};
 
-		try {
-			reader.serialPort = new SerialPort.SerialPort(port, {
-				baudrate: 9600,
-				parser: parser
-			});
-		} catch (e) {
-			reader.serialPort = null;
-			reader.emit('error', e);
+
+  open() {
+		if (this._readerThrottleTimer) {
 			return;
 		}
 
-		this.serialPort.on('open', function() {
-			reader.emit('open', port);
-			reader.getIdFromReader();
-			reader.setLevel(reader.level);
-			reader.getCards();
+		var rePort = new RegExp(this._comPortPattern);
+
+		var port;
+		var devs = fs.readdirSync('/dev/');
+		devs.forEach(function(dev) {
+			if (rePort.test(dev)) {
+				port = dev;
+			}
+		});
+		if (!port) {
+			this.retryOpen();
+			return console.log('Cannot guess reader serial port ' + this._comPortPattern);
+		}
+
+		port = '/dev/' + port;
+
+		this.data = '';
+
+		try {
+			this._serialPort = new SerialPort.SerialPort(port, {
+				baudrate: 9600,
+				parser: this._parser.bind(this)
+			});
+		} catch (e) {
+			this._serialPort = null;
+			this.emit('error', e);
+			return;
+		}
+
+		this._serialPort.on('open', () => {
+			this.emit('open', port);
+			this.getIdFromReader();
+			this.setLevel(reader.level);
+			this.getCards();
 		});
 
-		this.serialPort.on('close', function() {
-			reader.serialPort = null;
-			reader.emit('close');
-			reader.reset();
-			reader.retryOpen();
+		this._serialPort.on('close', () => {
+			this._serialPort = null;
+			this.emit('close');
+			this.reset();
+			this.retryOpen();
 		});
 
 		this.reset();
 	}
 
 	close() {
-		if (!this.serialPort) {
+		if (!this._serialPort) {
 			throw new Error('Not open');
 		}
 		this.serialport.close();
 	}
 
-	reset() {
-		this._readerId = 0;
-		this._cards = {};
-		this._level = 0;
-		this._busy = false;
-		this._commands = [];
-	}
+
 
 	write(command, id) {
 		this._commands.push({
@@ -151,17 +150,17 @@ class Reader extends EventEmitter {
 	}
 
 	_writeWaiting() {
-		if (this._commands.length && !this.busy && this.serialPort) {
+		if (this._commands.length && !this.busy && this._serialPort) {
 			var next = this._commands.shift();
 			var data = new Buffer('\r\n' + next.command + '\r\n', 'ascii');
 			this._busy = true;
 			this._lastid = next.id;
 			this.emit('dataout', data);
-			this.serialPort.write(data);
+			this._serialPort.write(data);
 		}
 	}
 
-	decode(line) {
+	_decode(line) {
 		var reply = line.substr(0, 1);
 		var id = line.substr(17, 1) + '-' + line.substr(2, 14);
 		var level = parseInt(line.substr(16, 1), 16);
@@ -279,7 +278,7 @@ class Reader extends EventEmitter {
 	}
 
 	setLevel(level, cb) {
-		if (!this.serialPort) {
+		if (!this._serialPort) {
 			throw new Error('Not open');
 		}
 		if (level) {
@@ -297,7 +296,7 @@ class Reader extends EventEmitter {
 	}
 
 	getIdFromReader(cb) {
-		if (!this.serialPort) {
+		if (!this._serialPort) {
 			throw new Error('Not open');
 		}
 		if (typeof cb === 'function') {
@@ -312,7 +311,7 @@ class Reader extends EventEmitter {
 	}
 
 	activate(cb) {
-		if (!this.serialPort) {
+		if (!this._serialPort) {
 			throw new Error('Not open');
 		}
 		if (typeof cb === 'function') {
@@ -322,7 +321,7 @@ class Reader extends EventEmitter {
 	}
 
 	getCards(cb) {
-		if (!this.serialPort) {
+		if (!this._serialPort) {
 			throw new Error('Not open');
 		}
 		this._cards = {};
@@ -333,7 +332,7 @@ class Reader extends EventEmitter {
 	}
 
 	add(id, level) {
-		if (!this.serialPort) {
+		if (!this._serialPort) {
 			throw new Error('Not open');
 		}
 		level = parseInt(level, 10);
@@ -347,7 +346,7 @@ class Reader extends EventEmitter {
 	}
 
 	remove(id) {
-		if (!this.serialPort) {
+		if (!this._serialPort) {
 			throw new Error('Not open');
 		}
 		console.log('Reader remove', id);

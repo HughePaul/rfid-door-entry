@@ -87,7 +87,7 @@ class Reader extends EventEmitter {
 
 		try {
 			this._serialPort = this._getSerialPort();
-			if(!this._serialPort) throw 'Unable to assign serial port';
+			if(!this._serialPort) { throw 'Unable to assign serial port'; }
 		} catch (e) {
 			this._serialPort = null;
 			this.emit('error', e);

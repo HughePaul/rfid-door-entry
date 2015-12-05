@@ -42,13 +42,13 @@ class DummySerialPort extends EventEmitter {
 	}
 
 	open() {
-		if(this._isOpen) return;
+		if(this._isOpen) { return; }
 		this._isOpen = true;
 		this.emit('open');
 	}
 
 	close() {
-		if(!this._isOpen) return;
+		if(!this._isOpen) { return; }
 		this._isOpen = false;
 		this.emit('close');
 	}
@@ -75,7 +75,7 @@ class DummySerialPort extends EventEmitter {
 	_hexToCard(hex) {
 		var id = hex.substr(0, 14);
 		var type = hex.substr(15, 1);
-		var level = parseInt(hex.substr(14, 1), 16) || 0
+		var level = parseInt(hex.substr(14, 1), 16) || 0;
 		return {
 			id: type + '-' + id,
 			level: level
@@ -107,11 +107,11 @@ class DummySerialPort extends EventEmitter {
 		var card = this._findCard(id);
 		if(card) {
 			console.log(this._options.name, 'programCard', 'Removing card', id);
-			return removeCard(id);
+			return this.removeCard(id);
 		}
 
 		console.log(this._options.name, 'programCard', 'Adding card', id, this._options.level);
-		return updateCard({id: id, level: this._options.level});
+		return this.updateCard({id: id, level: this._options.level});
 	}
 
 	updateCard(card) {

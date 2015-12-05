@@ -9,10 +9,15 @@ var config = require('./config')
 	.load();
 
 // Load Reader
-var Reader = require('./Reader');
+var SerialReader = require('./SerialReader');
+var DummyReader = require('./DummyReader');
 var readers = [];
-config.comPorts.forEach(function(comPortPattern) {
-	readers.push(new Reader(comPortPattern));
+config.comPorts.forEach(function(options) {
+	if(typeof options === 'string') {
+		readers.push(new SerialReader(options));
+	} else {
+		readers.push(new DummyReader(options));		
+	}
 });
 
 // Load card database

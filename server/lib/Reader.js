@@ -1,15 +1,11 @@
 'use strict';
 
-var util = require('util');
 var EventEmitter = require('events')
 	.EventEmitter;
-var SerialPort = require('serialport');
-var fs = require('fs');
 
 class Reader extends EventEmitter {
-	constructor(comPortPattern) {
+	constructor() {
 		super();
-		this._comPortPattern = comPortPattern;
 		this._serialPort = null;
 		this._readerThrottleTimer = null;
 		this._readerId = 0;
@@ -55,60 +51,43 @@ class Reader extends EventEmitter {
 	}
 
 	_parser(emitter, buffer) {
-			// check buffer isn't out of range
-			var bad = false;
-			for (var i = 0; i < buffer.length; i++) {
-				if (buffer[i] < 10 || buffer[i] > 'Z') {
-					bad = true;
-				}
+		// check buffer isn't out of range
+		var bad = false;
+		for (var i = 0; i < buffer.length; i++) {
+			if (buffer[i] < 10 || buffer[i] > 'Z') {
+				bad = true;
 			}
+		}
 
-			this.emit('datain', buffer, bad);
+		this.emit('datain', buffer, bad);
 
-			if (bad) {
-				return;
-			}
+		if (bad) {
+			return;
+		}
 
-			// Collect data
-			data += buffer.toString('ascii');
+		// Collect data
+		this._data += buffer.toString('ascii');
 
-			// Split collected data by delimiter
-			var parts = data.split('\r\n');
-			data = parts.pop();
-			parts.forEach((part) => {
-				this._decode(part);
-			});
-		};
+		// Split collected data by delimiter
+		var parts = this._data.split('\r\n');
+		this._data = parts.pop();
+		parts.forEach((part) => {
+			this._decode(part);
+		});
+	}
 
+	_getSerialPort() {
+		throw new Error('Cannot use abstract Reader class');
+	}
 
   open() {
 		if (this._readerThrottleTimer) {
 			return;
 		}
 
-		var rePort = new RegExp(this._comPortPattern);
-
-		var port;
-		var devs = fs.readdirSync('/dev/');
-		devs.forEach(function(dev) {
-			if (rePort.test(dev)) {
-				port = dev;
-			}
-		});
-		if (!port) {
-			this.retryOpen();
-			return console.log('Cannot guess reader serial port ' + this._comPortPattern);
-		}
-
-		port = '/dev/' + port;
-
-		this.data = '';
-
 		try {
-			this._serialPort = new SerialPort.SerialPort(port, {
-				baudrate: 9600,
-				parser: this._parser.bind(this)
-			});
+			this._serialPort = this._getSerialPort();
+			if(!this._serialPort) throw 'Unable to assign serial port';
 		} catch (e) {
 			this._serialPort = null;
 			this.emit('error', e);
@@ -116,9 +95,9 @@ class Reader extends EventEmitter {
 		}
 
 		this._serialPort.on('open', () => {
-			this.emit('open', port);
+			this.emit('open');
 			this.getIdFromReader();
-			this.setLevel(reader.level);
+			this.setLevel(this.level);
 			this.getCards();
 		});
 
@@ -138,8 +117,6 @@ class Reader extends EventEmitter {
 		}
 		this.serialport.close();
 	}
-
-
 
 	write(command, id) {
 		this._commands.push({
@@ -213,8 +190,8 @@ class Reader extends EventEmitter {
 						case '43':
 							error.message = 'End of memory when removing record';
 							break;
-						case '50':
-							error.message = 'Record not found';
+						case '4f':
+							error.message = 'Database error';
 							break;
 					}
 					this.emit('error', error, this._lastid);

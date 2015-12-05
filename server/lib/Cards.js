@@ -330,7 +330,7 @@ function Cards(config, readers) {
 		reader
 			.on('close', function() {
 				console.error('Reader port closed.');
-				that.reader.retryOpen();
+				reader.retryOpen();
 			})
 			.on('error', function(e) {
 				that.addLog({
@@ -357,7 +357,7 @@ function Cards(config, readers) {
 					for (id in dbCards) {
 						if (!readerCards[id]) {
 							console.log('Syncing: Adding card', id, 'to reader');
-							that.reader.add(id, dbCards[id].level);
+							reader.add(id, dbCards[id].level);
 						}
 					}
 

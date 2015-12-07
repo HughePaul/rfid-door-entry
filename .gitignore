@@ -13,3 +13,4 @@ DoorEntryExtension.zip
 /hardware/entry.X/dist/default/
 .map
 Makefile-genesis.properties
+Makefile-variables.mk

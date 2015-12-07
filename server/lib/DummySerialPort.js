@@ -15,6 +15,9 @@ class DummySerialPort extends EventEmitter {
 		this._options = options;
 		this._options.id = this._options.id || DummySerialPort.generateId();
 		this._options.level = this._options.level || 15;
+		if(this._options.doorOpeningDelay === undefined) {
+			this._options.doorOpeningDelay = 2000;
+		}
 		this._options.name = name || options.name || 'DummySerialPort' + this._options.id;
 
 		if(typeof this._options != 'object') {
@@ -101,6 +104,12 @@ class DummySerialPort extends EventEmitter {
 
 		console.log(this._options.name, 'presentCard', 'Access granted', id);
 		this._sendResponse('\r\nG ' + this._cardToHex(card) + '\r\n');
+		if(this._options.doorOpeningDelay) {
+			setTimeout( () => this._sendResponse('\r\nD R\r\n'),
+				this._options.doorOpeningDelay);
+			setTimeout( () => this._sendResponse('\r\nD C\r\n'),
+				this._options.doorOpeningDelay * 2);
+		}
 	}
 
 	programCard(id) {
@@ -112,6 +121,15 @@ class DummySerialPort extends EventEmitter {
 
 		console.log(this._options.name, 'programCard', 'Adding card', id, this._options.level);
 		return this.updateCard({id: id, level: this._options.level});
+	}
+
+	manuallyOpenDoor() {
+		if(this._options.doorOpeningDelay) {
+			setTimeout( () => this._sendResponse('\r\nD M\r\n'),
+				this._options.doorOpeningDelay);
+			setTimeout( () => this._sendResponse('\r\nD C\r\n'),
+				this._options.doorOpeningDelay * 2);
+		}		
 	}
 
 	updateCard(card) {

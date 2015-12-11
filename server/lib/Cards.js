@@ -7,6 +7,8 @@ var EventEmitter = require('events')
 var sqlite3 = require('sqlite3')
 	.verbose();
 
+var Reader = require('./Reader');
+
 function Cards(config, readers) {
 	var that = this;
 
@@ -442,6 +444,9 @@ function Cards(config, readers) {
 			})
 			.on('door', function(state) {
 				//			that.addLog({reader: reader.name, type: 'DOOR', desc: state});
+				if(state === Reader.DOOR_MANUAL) {
+					that.addLog({reader: reader.name, type: 'DOOR', desc: state});
+				}
 				that.emit('door', state, reader.name);
 			});
 	});

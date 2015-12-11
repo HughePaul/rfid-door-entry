@@ -61,7 +61,6 @@ class Reader extends EventEmitter {
 	}
 
 	_parser(emitter, buffer) {
-console.log('serial >', JSON.stringify(buffer.toString('ascii')));
 
 		// check buffer isn't out of range
 		var bad = false;

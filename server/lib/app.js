@@ -142,7 +142,8 @@ io.sockets.on('connection', function(socket) {
 			return socket.emit('noauth', 'badlogin');
 		}
 		// set up cookie
-		socket.emit('auth', username, userCookie(username));
+		var readerNames = readers.map(function(reader){ return reader.name; })
+		socket.emit('auth', username, userCookie(username), readerNames);
 		loggedInUsername = username;
 		init();
 	});
@@ -174,9 +175,15 @@ io.sockets.on('connection', function(socket) {
 		}
 	};
 
-	var openedHandler = function() {
+	var openedHandler = function(readerName, loggedInUsername) {
 		if (socket.authed) {
-			socket.emit('opened');
+			socket.emit('opened', readerName, loggedInUsername);
+		}
+	};
+
+	var doorHandler = function(readerName, doorState) {
+		if (socket.authed) {
+			socket.emit('door', readerName, doorState);
 		}
 	};
 

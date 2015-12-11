@@ -80,6 +80,7 @@ window.onload = function() {
 	var socket = io.connect();
 
 	var cardCache = {};
+	var readers = [];
 
 	socket.on('connect', function() {
 		var username = sessionStorage.getItem('username');
@@ -87,9 +88,10 @@ window.onload = function() {
 		socket.emit('auth', username, cookie);
 	});
 
-	socket.on('auth', function(username, cookie) {
+	socket.on('auth', function(username, cookie, readerNames) {
 		sessionStorage.setItem('username', username);
 		sessionStorage.setItem('cookie', cookie);
+		readers = readerNames;
 		addBtn.disabled = false;
 		currentLevel.disabled = false;
 		openBtn.disabled = false;
@@ -420,7 +422,7 @@ window.onload = function() {
 	openBtn.onclick = function() {
 		if (confirm('Are you sure you want to open the door?')) {
 			console.log('Open');
-			socket.emit('open', 0);
+			socket.emit('open', readers[0]);
 		}
 	};
 

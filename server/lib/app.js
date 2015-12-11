@@ -12,8 +12,8 @@ var config = require('./config')
 var SerialReader = require('./SerialReader');
 var DummyReader = require('./DummyReader');
 var readers = [];
-config.comPorts.forEach(function(options) {
-	if(typeof options === 'string') {
+config.readers.forEach(function(options) {
+	if(options.type && options.type.toLowerCase() === 'serial') {
 		readers.push(new SerialReader(options));
 	} else {
 		readers.push(new DummyReader(options));		
@@ -184,6 +184,7 @@ io.sockets.on('connection', function(socket) {
 	cards.on('card', cardHandler);
 	cards.on('level', levelHandler);
 	cards.on('opened', openedHandler);
+	cards.on('door', doorHandler);
 
 	socket.on('disconnect', function() {
 		console.log('disconnect');
@@ -191,6 +192,7 @@ io.sockets.on('connection', function(socket) {
 		cards.removeListener('card', cardHandler);
 		cards.removeListener('level', levelHandler);
 		cards.removeListener('opened', openedHandler);
+		cards.removeListener('door', doorHandler);
 	});
 
 	socket.on('card', function(id, data) {
@@ -207,12 +209,12 @@ io.sockets.on('connection', function(socket) {
 		}
 		cards.setLevel(level, loggedInUsername);
 	});
-	socket.on('open', function(readerId) {
+	socket.on('open', function(readerName) {
 		if (!socket.authed) {
 			return socket.emit('noauth');
 		}
 		try {
-			cards.activate(readerId, loggedInUsername);
+			cards.activate(readerName, loggedInUsername);
 		} catch (e) {
 			console.error(e);
 			socket.emit('error', e.message);

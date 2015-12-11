@@ -4,9 +4,10 @@ var EventEmitter = require('events')
 	.EventEmitter;
 
 class Reader extends EventEmitter {
-	constructor() {
+	constructor(options) {
 		super();
-		this._serialPort = null;
+		this._options = options;
+		this._device = null;
 		this._readerThrottleTimer = null;
 		this._readerId = 0;
 		this._lastid = '';
@@ -19,16 +20,25 @@ class Reader extends EventEmitter {
 		this._readerId = 0;
 		this._cards = {};
 		this._level = 0;
+		this._door = Reader.DOOR_CLOSED;
 		this._busy = false;
 		this._commands = [];
 	}
 
+	get name() {
+		return this._options.name || ('Reader' + this._readerId);
+	}
+
 	get isOpen() {
-		return !!this._serialPort;
+		return !!this._device;
 	}
 
 	get level() {
 		return this._level;
+	}
+
+	get door() {
+		return this._door;
 	}
 
 	set level(l) {
@@ -51,6 +61,8 @@ class Reader extends EventEmitter {
 	}
 
 	_parser(emitter, buffer) {
+console.log('serial >', JSON.stringify(buffer.toString('ascii')));
+
 		// check buffer isn't out of range
 		var bad = false;
 		for (var i = 0; i < buffer.length; i++) {
@@ -76,7 +88,7 @@ class Reader extends EventEmitter {
 		});
 	}
 
-	_getSerialPort() {
+	_getDevice() {
 		throw new Error('Cannot use abstract Reader class');
 	}
 
@@ -86,23 +98,23 @@ class Reader extends EventEmitter {
 		}
 
 		try {
-			this._serialPort = this._getSerialPort();
-			if(!this._serialPort) { throw 'Unable to assign serial port'; }
+			this._device = this._getDevice();
+			if(!this.isOpen) { throw 'Unable to assign reader device ' + this.name; }
 		} catch (e) {
-			this._serialPort = null;
+			this._device = null;
 			this.emit('error', e);
 			return;
 		}
 
-		this._serialPort.on('open', () => {
+		this._device.on('open', () => {
 			this.emit('open');
 			this.getIdFromReader();
 			this.setLevel(this.level);
 			this.getCards();
 		});
 
-		this._serialPort.on('close', () => {
-			this._serialPort = null;
+		this._device.on('close', () => {
+			this._device = null;
 			this.emit('close');
 			this.reset();
 			this.retryOpen();
@@ -112,8 +124,8 @@ class Reader extends EventEmitter {
 	}
 
 	close() {
-		if (!this._serialPort) {
-			throw new Error('Not open');
+		if (!this.isOpen) {
+			throw new Error('Reader device is not open');
 		}
 		this.serialport.close();
 	}
@@ -127,13 +139,13 @@ class Reader extends EventEmitter {
 	}
 
 	_writeWaiting() {
-		if (this._commands.length && !this.busy && this._serialPort) {
+		if (this._commands.length && !this.busy && this._device) {
 			var next = this._commands.shift();
 			var data = new Buffer('\r\n' + next.command + '\r\n', 'ascii');
 			this._busy = true;
 			this._lastid = next.id;
 			this.emit('dataout', data);
-			this._serialPort.write(data);
+			this._device.write(data);
 		}
 	}
 
@@ -220,6 +232,25 @@ class Reader extends EventEmitter {
 				this._level = parseInt(line.substr(2, 1), 16);
 				this.emit('level', this._level);
 				break;
+				// current door state
+			case 'D':
+				var doorState = line.substr(2, 1);
+				switch(doorState) {
+					case 'R':
+						this._door = Reader.DOOR_OPENED;
+						break;
+					case 'M':
+						this._door = Reader.DOOR_MANUAL;
+						break;
+					case 'C':
+						this._door = Reader.DOOR_CLOSED;
+						break;
+					default:
+						this.emit('error', 'Unknown door state from reader: ' + doorState);
+						break;
+				}
+				this.emit('door', this.door);
+				break;
 				// a card was added
 			case 'A':
 				this._cards[id] = level;
@@ -235,7 +266,7 @@ class Reader extends EventEmitter {
 				this._cards[id] = level;
 				this.emit('access', id, level);
 				break;
-				// unknwon card
+				// unknown card
 			case 'B':
 				this.emit('unknown', id);
 				break;
@@ -248,14 +279,14 @@ class Reader extends EventEmitter {
 				this.emit('badcommand');
 				break;
 			default:
-				this.emit('error', 'Unknown reply: ' + line);
+				this.emit('error', 'Unknown response from reader: ' + line);
 		}
 
 		this._writeWaiting();
 	}
 
 	setLevel(level, cb) {
-		if (!this._serialPort) {
+		if (!this.isOpen) {
 			throw new Error('Not open');
 		}
 		if (level) {
@@ -273,7 +304,7 @@ class Reader extends EventEmitter {
 	}
 
 	getIdFromReader(cb) {
-		if (!this._serialPort) {
+		if (!this.isOpen) {
 			throw new Error('Not open');
 		}
 		if (typeof cb === 'function') {
@@ -288,7 +319,7 @@ class Reader extends EventEmitter {
 	}
 
 	activate(cb) {
-		if (!this._serialPort) {
+		if (!this.isOpen) {
 			throw new Error('Not open');
 		}
 		if (typeof cb === 'function') {
@@ -298,7 +329,7 @@ class Reader extends EventEmitter {
 	}
 
 	getCards(cb) {
-		if (!this._serialPort) {
+		if (!this.isOpen) {
 			throw new Error('Not open');
 		}
 		this._cards = {};
@@ -309,7 +340,7 @@ class Reader extends EventEmitter {
 	}
 
 	add(id, level) {
-		if (!this._serialPort) {
+		if (!this.isOpen) {
 			throw new Error('Not open');
 		}
 		level = parseInt(level, 10);
@@ -323,7 +354,7 @@ class Reader extends EventEmitter {
 	}
 
 	remove(id) {
-		if (!this._serialPort) {
+		if (!this.isOpen) {
 			throw new Error('Not open');
 		}
 		console.log('Reader remove', id);
@@ -335,5 +366,9 @@ class Reader extends EventEmitter {
 	}
 
 }
+
+Reader.DOOR_CLOSED = 'Door Closed';
+Reader.DOOR_MANUAL = 'Manually Opened';
+Reader.DOOR_OPENED = 'Door Opened';
 
 module.exports = Reader;

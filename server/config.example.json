@@ -1,8 +1,16 @@
 {
 	"port": 8081,
 	"secret": "er989c8ec£$Rev94wvsdf4lkw3",
-	"comPorts": [
-		"^ttyUSB0$"
+	"readers": [
+		{
+			"name": "test",
+			"type": "serial",
+			"device": "^ttyUSB0$"
+		},
+		{
+			"name": "dummy",
+			"type": "dummy"
+		}
 	],
 	"database": "cards.sqlite",
 	"push": {

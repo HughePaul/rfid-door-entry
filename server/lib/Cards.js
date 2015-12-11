@@ -61,7 +61,7 @@ function Cards(config, readers) {
 				if (err) {
 					console.log('Creating log table');
 					db.serialize(function() {
-						db.run("CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT, type STRING, desc TEXT, cardid TEXT, level INTEGER, reader INTEGER)", function(err) {
+						db.run("CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT, type STRING, desc TEXT, cardid TEXT, level INTEGER, reader TEXT)", function(err) {
 							if (err) {
 								return console.error(err);
 							}
@@ -195,10 +195,10 @@ function Cards(config, readers) {
 								var now = new Date();
 								var hour = (now.getHours() * 2) + (now.getMinutes() >= 30 ? 1 : 0);
 								var current = (details.pattern.substr(hour, 1) === '#');
-								console.log(current ? 'Enabled' : 'Disable', 'card on reader', reader.getId(), id, details.level);
+								console.log(current ? 'Enabled' : 'Disable', 'card on reader', reader.name, id, details.level);
 								reader.add(id, current ? details.level : 1);
 							} else {
-								console.log('Add card to reader', reader.getId(), id, details.level);
+								console.log('Add card to reader', reader.name, id, details.level);
 								reader.add(id, details.level);
 							}
 						}
@@ -291,14 +291,14 @@ function Cards(config, readers) {
 			that.readers.forEach(function(reader){
 				try {
 					if (reader.cards[id]) {
-						console.log('Remove card from reader', reader.getId(), id);
+						console.log('Remove card from reader', reader.name, id);
 						reader.remove(id);
 					}
 					if (cb) {
 						cb(id, card);
 					}
 				} catch (e) {
-					console.error('Reader error:', e);
+					console.error('Reader', reader.name,'error:', e);
 				}
 			});
 			that.emit('card', id);
@@ -329,23 +329,25 @@ function Cards(config, readers) {
 
 		reader
 			.on('close', function() {
-				console.error('Reader port closed.');
+				console.error('Reader', reader.name, 'port closed.');
 				reader.retryOpen();
 			})
 			.on('error', function(e) {
 				that.addLog({
+					reader: reader.name,
 					type: 'ERROR',
 					desc: 'Reader error ' + e
 				});
 			})
 			.on('reset', function() {
 				that.addLog({
+					reader: reader.name,
 					type: 'RESET',
 					desc: 'Reader reset'
 				});
 			})
 			.on('cards', function(readerCards) {
-				console.log('Syncing cards between db and reader');
+				console.log('Syncing cards between db and reader', reader.name);
 
 				that.getCards(function(err, dbCards) {
 					if (err) {
@@ -356,14 +358,14 @@ function Cards(config, readers) {
 
 					for (id in dbCards) {
 						if (!readerCards[id]) {
-							console.log('Syncing: Adding card', id, 'to reader');
+							console.log('Syncing: Adding card', id, 'to reader', reader.name);
 							reader.add(id, dbCards[id].level);
 						}
 					}
 
 					for (id in readerCards) {
 						if (!dbCards[id]) {
-							console.log('Syncing: Adding card', id, 'to db');
+							console.log('Syncing: Adding card', id, 'to db from', reader.name);
 							that.updateCard(id, {
 								level: readerCards[id]
 							});
@@ -375,6 +377,7 @@ function Cards(config, readers) {
 			})
 			.on('access', function(id, level) {
 				that.addLog({
+					reader: reader.name,
 					type: 'ACCESS',
 					desc: 'Access granted',
 					cardid: id,
@@ -384,6 +387,7 @@ function Cards(config, readers) {
 			})
 			.on('noaccess', function(id, level) {
 				that.addLog({
+					reader: reader.name,
 					type: 'NOACCESS',
 					desc: 'Access denied',
 					cardid: id,
@@ -393,6 +397,7 @@ function Cards(config, readers) {
 			})
 			.on('unknown', function(id) {
 				that.addLog({
+					reader: reader.name,
 					type: 'NOACCESS',
 					desc: 'Access denied',
 					cardid: id,
@@ -404,6 +409,7 @@ function Cards(config, readers) {
 					level: level
 				}, function(id, card, isNew) {
 					that.addLog({
+						reader: reader.name,
 						type: isNew ? 'ADDED' : 'UPDATED',
 						desc: JSON.stringify(card),
 						cardid: id,
@@ -416,6 +422,7 @@ function Cards(config, readers) {
 					level: 0
 				}, function(id, card) {
 					that.addLog({
+						reader: reader.name,
 						type: 'REMOVED',
 						desc: JSON.stringify(card),
 						cardid: id,
@@ -425,26 +432,31 @@ function Cards(config, readers) {
 			})
 			.on('level', function(level) {
 				that.level = level;
-				//			that.addLog({type: 'LEVEL', desc: 'Security Level', level: level});
+				//			that.addLog({reader: reader.name, type: 'LEVEL', desc: 'Security Level', level: level});
 				that.emit('level', level);
 				that.saveLevel(level);
 			})
 			.on('activate', function() {
-				//			that.addLog({type: 'OPENED', desc: 'Door Opened'});
-				that.emit('opened');
+				//			that.addLog({reader: reader.name, type: 'OPENED', desc: 'Door Unlocked'});
+				that.emit('opened', reader.name);
+			})
+			.on('door', function(state) {
+				//			that.addLog({reader: reader.name, type: 'DOOR', desc: state});
+				that.emit('door', state, reader.name);
 			});
 	});
 
-	this.activate = function(readerId, loggedInUsername, cb) {
+	this.activate = function(readerName, loggedInUsername, cb) {
 		that.readers.forEach(function(reader){
-			if(reader.getId() != readerId) return;
+			if(reader.name != readerName) { return; }
 			reader.activate(function() {
 				that.addLog({
+					reader: reader.name,
 					type: 'OPENED',
 					desc: 'Door opened by ' + loggedInUsername
 				});
 				if (cb) {
-					cb(readerId, loggedInUsername);
+					cb(reader.name, loggedInUsername);
 				}
 			});
 		});
@@ -454,6 +466,7 @@ function Cards(config, readers) {
 		that.readers.forEach(function(reader){
 			reader.setLevel(level, function(level) {
 				that.addLog({
+					reader: reader.name,
 					type: 'LEVEL',
 					desc: 'Security level changed by ' + loggedInUsername,
 					level: level

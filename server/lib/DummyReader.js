@@ -5,12 +5,11 @@ var DummySerialPort = require('./DummySerialPort');
 
 class DummyReader extends Reader {
 	constructor(options) {
-		super();
-		this._options = options;
+		super(options);
 		this._options.parser = this._parser.bind(this);
 	}
 
-	_getSerialPort() {
+	_getDevice() {
 		return new DummySerialPort(this._options.name, this._options);
 	}
 }

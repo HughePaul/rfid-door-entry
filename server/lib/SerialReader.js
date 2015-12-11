@@ -5,13 +5,12 @@ var fs = require('fs');
 var Reader = require('./Reader');
 
 class SerialReader extends Reader {
-	constructor(comPortPattern) {
-		super();
-		this._comPortPattern = comPortPattern;
+	constructor(options) {
+		super(options);
 	}
 
-	_getSerialPort() {
-		var rePort = new RegExp(this._comPortPattern);
+	_getDevice() {
+		var rePort = new RegExp(this._options.device);
 
 		var port;
 		var devs = fs.readdirSync('/dev/');
@@ -22,7 +21,7 @@ class SerialReader extends Reader {
 		});
 		if (!port) {
 			this.retryOpen();
-			return console.log('Cannot guess reader serial port ' + this._comPortPattern);
+			return console.log('Cannot guess reader serial port ' + this._options.device);
 		}
 
 		port = '/dev/' + port;

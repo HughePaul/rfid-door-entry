@@ -128,7 +128,8 @@ io.sockets.on('connection', function(socket) {
 		if (!socket.authed) {
 			return socket.emit('noauth');
 		}
-		socket.emit('auth', username, cookie);
+		var readerNames = readers.map(function(reader){ return reader.name; });
+		socket.emit('auth', username, cookie, readerNames);
 		loggedInUsername = username;
 		init();
 	});

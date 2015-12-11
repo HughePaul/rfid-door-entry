@@ -13,7 +13,7 @@ window.onload = function() {
 	var addBtn = document.getElementById('addBtn');
 	var removeBtn = document.getElementById('removeBtn');
 	var currentLevel = document.getElementById('currentLevel');
-	var openBtn = document.getElementById('openBtn');
+	var openBtns = document.getElementById('openBtns');
 
 	var cardAvatarImg = document.getElementById('cardavatarimg');
 	var cardName = document.getElementById('cardname');
@@ -74,7 +74,6 @@ window.onload = function() {
 	removeBtn.disabled = true;
 	addBtn.disabled = true;
 	currentLevel.disabled = true;
-	openBtn.disabled = true;
 
 	// connect socket and listen to events
 	var socket = io.connect();
@@ -88,13 +87,12 @@ window.onload = function() {
 		socket.emit('auth', username, cookie);
 	});
 
-	socket.on('auth', function(username, cookie, readerNames) {
+	socket.on('auth', function(username, cookie, readers) {
 		sessionStorage.setItem('username', username);
 		sessionStorage.setItem('cookie', cookie);
-		readers = readerNames;
+		updateReaders(readers);
 		addBtn.disabled = false;
 		currentLevel.disabled = false;
-		openBtn.disabled = false;
 		hideLogin();
 	});
 
@@ -103,6 +101,7 @@ window.onload = function() {
 		sessionStorage.setItem('cookie', '');
 		reset();
 		showLogin();
+		updateReaders();
 	});
 
 	socket.on('error', function(err) {
@@ -149,6 +148,51 @@ window.onload = function() {
 			updateCard(id, cards[id]);
 		}
 		addBtn.disabled = false;
+	}
+
+	function updateReaders(newReaders) {
+		readers = {};
+		openBtns.innerHTML = '';
+		if(!newReaders) { return; }
+		for(var i=0; i < newReaders.length; i++) {
+			(function(reader) {
+				readers[reader.name] = reader;
+				reader.id = reader.name.replace(/[^A-Za-z0-9]/g,'_');;
+				var button = document.createElement('button');
+				button.id = 'openBtn' + reader.id;
+				button.textContent = 'Open ' + reader.name;
+				openBtns.appendChild(button);
+
+				button.onclick = function() {
+					if (confirm('Are you sure you want to open the '+reader.name+' door?')) {
+						console.log('Open', reader.name);
+						socket.emit('open', reader.name);
+					}
+				};
+
+				updateReaderBtn(reader);
+			})(newReaders[i]);
+		}
+	}
+	function updateReaderBtn(reader, door) {
+		if(typeof reader === 'string') {
+			reader = readers[reader];
+			reader.door = door;
+		}
+		if(!reader) { return; }
+		var btn = document.getElementById('openBtn' + reader.id);
+		if(!btn) { return; }
+		switch(reader.door) {
+			case 'Door Opened':
+				btn.className = 'doorOpened';
+				break;
+			case 'Manually Opened':
+				btn.className = 'manuallyOpened';
+				break;
+			case 'Door Closed':
+			default:
+				btn.className = '';
+		}
 	}
 
 	function updateCard(id, card) {
@@ -425,13 +469,6 @@ window.onload = function() {
 	addBtn.onclick = function() {
 		console.log('Add button');
 		updateDetails(null);
-	};
-
-	openBtn.onclick = function() {
-		if (confirm('Are you sure you want to open the door?')) {
-			console.log('Open');
-			socket.emit('open', readers[0]);
-		}
 	};
 
 	currentLevel.onchange = function() {

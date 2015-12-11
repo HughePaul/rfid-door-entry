@@ -129,7 +129,9 @@ io.sockets.on('connection', function(socket) {
 		if (!socket.authed) {
 			return socket.emit('noauth');
 		}
-		var readerNames = readers.map(function(reader){ return reader.name; });
+		var readerNames = readers.map(function(reader){
+				return { name: reader.name, door: reader.door };
+		});
 		socket.emit('auth', username, cookie, readerNames);
 		loggedInUsername = username;
 		init();
@@ -144,7 +146,9 @@ io.sockets.on('connection', function(socket) {
 			return socket.emit('noauth', 'badlogin');
 		}
 		// set up cookie
-		var readerNames = readers.map(function(reader){ return reader.name; });
+		var readerNames = readers.map(function(reader){
+				return { name: reader.name, door: reader.door };
+		});
 		socket.emit('auth', username, userCookie(username), readerNames);
 		loggedInUsername = username;
 		init();

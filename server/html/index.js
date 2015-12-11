@@ -274,6 +274,14 @@ window.onload = function() {
 		logType.textContent = item.type;
 		log.appendChild(logType);
 
+		if(item.reader) {
+			// log type
+			var reader = document.createElement('div');
+			reader.className = 'reader';
+			reader.textContent = item.reader;
+			log.appendChild(reader);
+		}
+
 		// log text
 		var logText = document.createElement('div');
 		logText.className = 'text';

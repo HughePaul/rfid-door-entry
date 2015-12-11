@@ -142,7 +142,7 @@ io.sockets.on('connection', function(socket) {
 			return socket.emit('noauth', 'badlogin');
 		}
 		// set up cookie
-		var readerNames = readers.map(function(reader){ return reader.name; })
+		var readerNames = readers.map(function(reader){ return reader.name; });
 		socket.emit('auth', username, userCookie(username), readerNames);
 		loggedInUsername = username;
 		init();

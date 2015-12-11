@@ -40,9 +40,6 @@ cards.on('log', function(item) {
 
 	switch (item.type) {
 		case 'DOOR':
-			if(state !== SerialReader.DOOR_MANUAL) {
-				break;
-			}
 		case 'ACCESS':
 		case 'NOACCESS':
 		case 'OPENED':

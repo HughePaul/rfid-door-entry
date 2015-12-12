@@ -178,12 +178,14 @@ window.onload = function() {
 			})(newReaders[i]);
 		}
 	}
-	function updateReaderBtn(reader, door) {
+	function updateReaderBtn(reader, doorState) {
 		if(typeof reader === 'string') {
 			reader = readers[reader];
-			reader.door = door;
 		}
 		if(!reader) { return; }
+		if(doorState) {
+			reader.door = doorState;			
+		}
 		var btn = document.getElementById('openBtn' + reader.id);
 		if(!btn) { return; }
 		switch(reader.door) {

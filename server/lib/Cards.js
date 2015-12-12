@@ -447,7 +447,7 @@ function Cards(config, readers) {
 				if(state === Reader.DOOR_MANUAL) {
 					that.addLog({reader: reader.name, type: 'DOOR', desc: 'Door manually opened'});
 				}
-				that.emit('door', state, reader.name);
+				that.emit('door', reader.name, state);
 			});
 	});
 

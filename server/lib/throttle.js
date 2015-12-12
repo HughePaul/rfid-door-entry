@@ -10,7 +10,7 @@ class Throttle {
 
   }
 
-  get record() {
+  record() {
     return this.callHistory.push(Date.now());
   }
 

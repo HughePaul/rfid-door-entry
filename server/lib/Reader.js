@@ -133,10 +133,11 @@ class Reader extends EventEmitter {
 		this.serialport.close();
 	}
 
-	write(command, id) {
+	write(command, id, cb) {
 		this._commands.push({
 			command: command,
-			id: id
+			id: id,
+			cb: cb
 		});
 		this._writeWaiting();
 	}
@@ -149,6 +150,7 @@ class Reader extends EventEmitter {
 			this._lastid = next.id;
 			this.emit('dataout', data);
 			this._device.write(data);
+			if(next.cb) { next.cb(); }
 		}
 	}
 
@@ -300,10 +302,10 @@ class Reader extends EventEmitter {
 			level = '';
 		}
 		if (typeof cb === 'function') {
-			this.once('level', cb);
+			var writeCb = () => this.once('level', cb);
 		}
 		console.log('Set Level', level);
-		this.write('S ' + level);
+		this.write('S ' + level, null, writeCb );
 	}
 
 	getIdFromReader(cb) {
@@ -326,9 +328,9 @@ class Reader extends EventEmitter {
 			throw new Error('Not open');
 		}
 		if (typeof cb === 'function') {
-			this.once('activate', cb);
+			var writeCb = () => this.once('activate', cb);
 		}
-		this.write('O');
+		this.write('O', null, writeCb);
 	}
 
 	getCards(cb) {

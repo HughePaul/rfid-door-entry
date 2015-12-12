@@ -14,7 +14,7 @@ function Cards(config, readers) {
 
 	that.readers = readers;
 
-	that.level = 0;
+	that.level = 15;
 
 	// open database
 	var filename = config.database ? path.resolve(__dirname, '..', config.database) : ':memory:';
@@ -41,7 +41,11 @@ function Cards(config, readers) {
 					return;
 				}
 				if (data && data.level) {
-					that.setLevel(data.level, 'Startup');
+					that.level = parseInt(data.level, 10);
+				}
+				if(!that.level) {
+					that.level = 15;
+					that.saveLevel();
 				}
 			});
 			db.get("SELECT count(id) FROM cards", function(err) {
@@ -97,8 +101,8 @@ function Cards(config, readers) {
 		}
 		return that;
 	};
-	this.saveLevel = function(level) {
-		db.run("UPDATE settings SET level = ?", [level], function(err) {
+	this.saveLevel = function() {
+		db.run("UPDATE settings SET level = ?", [that.level], function(err) {
 			if (err) {
 				console.error('Cards:db:', err);
 			}
@@ -433,10 +437,9 @@ function Cards(config, readers) {
 				});
 			})
 			.on('level', function(level) {
-				that.level = level;
-				//			that.addLog({reader: reader.name, type: 'LEVEL', desc: 'Security Level', level: level});
-				that.emit('level', level);
-				that.saveLevel(level);
+				if(level !== that.level) {
+					reader.setLevel(that.level);
+				}
 			})
 			.on('activate', function() {
 				//			that.addLog({reader: reader.name, type: 'OPENED', desc: 'Door Unlocked'});
@@ -462,22 +465,28 @@ function Cards(config, readers) {
 				});
 				if (cb) {
 					cb(reader.name, loggedInUsername);
+					cb = null;
 				}
 			});
 		});
 	};
 
 	this.setLevel = function(level, loggedInUsername, cb) {
+		that.level = parseInt(level, 10) || 15;
+		that.saveLevel();
+		var responses = 0;
 		that.readers.forEach(function(reader){
-			reader.setLevel(level, function(level) {
+			reader.setLevel(that.level , function(level) {
 				that.addLog({
 					reader: reader.name,
 					type: 'LEVEL',
 					desc: 'Security level changed by ' + loggedInUsername,
-					level: level
+					level: level 
 				});
-				if (cb) {
-					cb(level, loggedInUsername);
+				responses++;
+				if (responses === that.readers.length) {
+					if(cb) { cb(level, loggedInUsername); }
+					that.emit('level', that.level);
 				}
 			});
 		});

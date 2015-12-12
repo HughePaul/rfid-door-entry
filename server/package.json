@@ -18,5 +18,12 @@
     "socket.io": "latest",
     "sqlite3": "latest",
     "node-gcm": "latest"
+  },
+  "devDependencies": {
+    "mocha": "2.3.x",
+    "chai": "3.4.x"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha"
   }
 }

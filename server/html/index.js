@@ -128,6 +128,10 @@ window.onload = function() {
 		currentLevel.value = level;
 	});
 
+	socket.on('door', function(readerName, doorState) {
+		updateReaderBtn(readerName, doorState);
+	});
+
 	var currentCardId = '';
 	var authing = false;
 

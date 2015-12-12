@@ -254,7 +254,7 @@ class Reader extends EventEmitter {
 						this.emit('error', 'Unknown door state from reader: ' + doorState);
 						break;
 				}
-				this._doorNotificationThrottle( () => this.emit('door', this.door) );
+				this._doorNotificationThrottle.call( () => this.emit('door', this.door) );
 				break;
 				// a card was added
 			case 'A':

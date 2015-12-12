@@ -14,7 +14,7 @@ class Throttle {
     return this.callHistory.push(Date.now());
   }
 
-  get prune() {
+  prune() {
     var windowStart = Date.now() - this.options.period;
     while(this.callHistory[0] && this.callHistory[0] < windowStart) {
       this.callHistory.shift();

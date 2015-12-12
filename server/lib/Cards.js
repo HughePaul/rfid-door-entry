@@ -41,11 +41,11 @@ function Cards(config, readers) {
 					return;
 				}
 				if (data && data.level) {
-					that.level = parseInt(data.level, 10);
-				}
-				if(!that.level) {
+					that.level = parseInt(data.level, 10) || 15;
+				} else {
 					that.level = 15;
-					that.saveLevel();
+					db.run("INSERT INTO settings (level) VALUES (?)", [that.level]);
+					console.log('Creating settings record');
 				}
 			});
 			db.get("SELECT count(id) FROM cards", function(err) {

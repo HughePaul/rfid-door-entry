@@ -20,8 +20,8 @@
 ;**********************************************************************
 
 
-	list      p=16f628A            ; list directive to define processor
-	#include <p16f628a.inc>        ; processor specific variable definitions
+	list      p=16f628            ; list directive to define processor
+	#include <p16f628.inc>        ; processor specific variable definitions
 
 	__CONFIG _CP_OFF & _WDT_ON & _BODEN_ON & _PWRTE_ON & _XT_OSC & _MCLRE_OFF & _LVP_OFF
 
@@ -31,7 +31,7 @@
 
 
 
-READER_ID	EQU		0x01
+READER_ID	EQU		0x02
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

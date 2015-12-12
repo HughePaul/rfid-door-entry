@@ -220,7 +220,7 @@ class Reader extends EventEmitter {
 				// card list
 			case 'P':
 				if (id.length === 16) {
-					this._cards[id] = level;
+					this._cards[id] = level || 1;
 					this._busy = true;
 				} else {
 					this.emit('cards', this.cards);

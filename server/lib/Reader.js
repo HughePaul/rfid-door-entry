@@ -3,6 +3,8 @@
 var EventEmitter = require('events')
 	.EventEmitter;
 
+var Throttle = require('./throttle');
+
 class Reader extends EventEmitter {
 	constructor(options) {
 		super();
@@ -13,6 +15,8 @@ class Reader extends EventEmitter {
 		this._lastid = '';
 
 		this.reset();
+
+		this._doorNotificationThrottle = new Throttle({maxCalls: 1, period: 5000});
 	}
 
 	reset() {
@@ -248,7 +252,7 @@ class Reader extends EventEmitter {
 						this.emit('error', 'Unknown door state from reader: ' + doorState);
 						break;
 				}
-				this.emit('door', this.door);
+				this._doorNotificationThrottle( () => this.emit('door', this.door) );
 				break;
 				// a card was added
 			case 'A':

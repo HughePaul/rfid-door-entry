@@ -7,6 +7,37 @@ var should = chai.should();
 
 var DummySerialPort = require('../lib/DummySerialPort');
 
+var checkParserResponse = (expected, done, maxTime) => {
+  // expected is a list of response lines
+  if(!Array.isArray(expected)) {
+    expected = [expected];
+  }
+  maxTime = maxTime || 500;
+  var data = '';
+
+  setTimeout( () => {
+    // filter new line delimitered data into array of non-empty response lines
+    var found = data
+      .split('\r\n')
+      .filter( (line) => line !== '' );
+    found.should.deep.equal(expected);
+    done();
+  }, maxTime);
+
+  return (s, buffer) => {
+    // gobble up all data returned
+    data = data + buffer.toString('ascii');
+  };
+};
+
+var sendCommand = (port, command) => {
+  // send a new line wrapped command to serial port after a short delay to allow it to open
+  setTimeout( () => {
+    var data = new Buffer('\r\n' + command + '\r\n', 'ascii');
+    port.write(data);
+  }, 10);
+};
+
 describe('DummySerialPort', () => {
 
   describe('generateId', () => {
@@ -101,6 +132,177 @@ describe('DummySerialPort', () => {
 
   });
 
+  describe('swiping a known card above or at the current level', () => {
+    it('should send an access granted response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse([
+          'G 1234567890123454',
+          'D R',
+          'D C'
+          ], done),
+        replyDelay: 1,
+        level: 4,
+        doorOpeningDelay: 5,
+        cards: [ { id: '4-12345678901234', level: 5 } ]
+      });
+
+      port.presentCard('4-12345678901234');
+    });
+  });
+
+  describe('swiping a known card below the current level', () => {
+    it('should send an access denied response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse('N 1234567890123454', done),
+        replyDelay: 1,
+        level: 6,
+        cards: [ { id: '4-12345678901234', level: 5 } ]
+      });
+
+      port.presentCard('4-12345678901234');
+    });
+  });
+
+  describe('swiping an uknown card', () => {
+    it('should send an unknown card response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse('B 1234567890123504', done),
+        replyDelay: 1});
+
+      port.presentCard('4-12345678901235');
+    });
+  });
+
+  describe('programming an unknown card', () => {
+    it('should send a card added response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse('A 1234567890123564', done),
+        replyDelay: 1,
+        level: 6,
+        cards: [ { id: '4-12345678901234', level: 5 } ]
+      });
+
+      port.programCard('4-12345678901235');
+    });
+  });
+
+  describe('programming an known card', () => {
+    it('should send a card removed response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse('R 1234567890123454', done),
+        replyDelay: 1,
+        level: 6,
+        cards: [ { id: '4-12345678901234', level: 5 } ]
+      });
+
+      port.programCard('4-12345678901234');
+    });
+  });
+
+  describe('getting current level', () => {
+    it('should send a level response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse('S 6', done),
+        replyDelay: 1,
+        level: 6
+      });
+
+      sendCommand(port, 'S');
+    });
+  });
+
+  describe('setting a new level', () => {
+    it('should send a level response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse('S 7', done),
+        replyDelay: 1,
+        level: 6
+      });
+
+      sendCommand(port, 'S 7');
+    });
+  });
+
+  describe('asking for a list of all cards', () => {
+    it('should send a card list response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse([
+          'P 1234567890123454',
+          'P FEDCBA98765432B2',
+          'P'], done),
+        replyDelay: 1,
+        level: 6,
+        cards: [
+          { id: '4-12345678901234', level: 5 },
+          { id: '2-FEDCBA98765432', level: 11 }
+        ]
+      });
+
+      sendCommand(port, 'P');
+    });
+  });
+
+  describe('asking the id of the reader', () => {
+    it('should send an id response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse('I C', done),
+        replyDelay: 1,
+        id: 12,
+        level: 6
+      });
+
+      sendCommand(port, 'I');
+    });
+  });
+
+  describe('asking the id of the reader', () => {
+    it('should send an id response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse([
+          'O',
+          'D R',
+          'D C'
+        ], done),
+        replyDelay: 1,
+        id: 12,
+        level: 6,
+        doorOpeningDelay: 5,
+      });
+
+      sendCommand(port, 'O');
+    });
+  });
+
+  describe('sending an unknown command', () => {
+    it('should send an error response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse('?', done),
+        replyDelay: 1,
+        id: 12,
+        level: 6
+      });
+
+      sendCommand(port, 'Z');
+    });
+  });
+
+
+  describe('manually opening the door', () => {
+    it('should send a door open and door close response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse([
+          'D M',
+          'D C'
+        ], done),
+        replyDelay: 1,
+        id: 12,
+        level: 6,
+        doorOpeningDelay: 5,
+      });
+
+      port.manuallyOpenDoor();
+    });
+  });
 
 });
 

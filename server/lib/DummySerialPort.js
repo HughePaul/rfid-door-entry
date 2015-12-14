@@ -16,7 +16,7 @@ class DummySerialPort extends EventEmitter {
 		var parts = card.id.split('-');
 		var type = parts[0].substr(0,1);
 		var id = parts[1].substr(0,14);
-		var level = (card.level || 0).toString(16).substr(-1, 1) || '0';
+		var level = (card.level || 0).toString(16).toUpperCase().substr(-1, 1) || '0';
 		return id + level + type;
 	}
 
@@ -224,7 +224,7 @@ class DummySerialPort extends EventEmitter {
 			// reset
 			case 'I':
 				console.log(this.name,'Get Level');
-				this._sendResponse('\r\nI ' + this._options.id.toString(16) + '\r\n');
+				this._sendResponse('\r\nI ' + this._options.id.toString(16).toUpperCase() + '\r\n');
 				break;
 			case 'O':
 				console.log(this.name,'Open door');
@@ -251,7 +251,7 @@ class DummySerialPort extends EventEmitter {
 				if(level) {
 					this._options.level = level;
 				}
-				var hexLevel = this._options.level.toString(16).substr(-1,1) || '0';
+				var hexLevel = this._options.level.toString(16).toUpperCase().substr(-1,1) || '0';
 				this._sendResponse('\r\nS ' + hexLevel + '\r\n');
 				break;
 				// a card was added

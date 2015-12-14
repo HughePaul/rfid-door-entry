@@ -16,7 +16,7 @@ class DummySerialPort extends EventEmitter {
 		var parts = card.id.split('-');
 		var type = parts[0].substr(0,1);
 		var id = parts[1].substr(0,14);
-		var level = (card.level || 0).toString(16).toUpperCase().substr(-1, 1) || '0';
+		var level = (parseInt(card.level, 10) || 0).toString(16).toUpperCase().substr(-1, 1) || '0';
 		return id + level + type;
 	}
 

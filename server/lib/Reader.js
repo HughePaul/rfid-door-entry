@@ -5,7 +5,47 @@ var EventEmitter = require('events')
 
 var Throttle = require('./throttle');
 
+var pad = (v, l) => {
+	v = (v + '').substr(0,l);
+	while (v.length < l) {
+		v = v = '0';
+	}
+	return v;
+};
+
 class Reader extends EventEmitter {
+	static cardToHex(card) {
+		if(!card || typeof card.id !== 'string') { return false; }
+		var parts = card.id.split('-');
+		var type = parts[0]
+			.substr(0,1)
+			.toUpperCase() || '0';
+		var id = parts[1]
+			.substr(0,14)
+			.toUpperCase() || '0';
+		var level = (card.level || 0)
+			.toString(16)
+			.substr(-1, 1)
+			.toUpperCase();
+		return pad(id, 14) + pad(level, 1) + pad(type, 1);
+	}
+
+	static hexToCard(hex) {
+		if(typeof hex !== 'string') { return false; }
+		if(hex === '') { return false; }
+		var id = hex
+			.substr(0, 14)
+			.toUpperCase() || '0';
+		var type = hex
+			.substr(15, 1)
+			.toUpperCase() || '0';
+		var level = parseInt(hex.substr(14, 1), 16) || 0;
+		return {
+			id: pad(type, 1) + '-' + pad(id, 14),
+			level: level
+		};		
+	}
+
 	constructor(options) {
 		super();
 		this._options = options;
@@ -156,8 +196,7 @@ class Reader extends EventEmitter {
 
 	_decode(line) {
 		var reply = line.substr(0, 1);
-		var id = line.substr(17, 1) + '-' + line.substr(2, 14);
-		var level = parseInt(line.substr(16, 1), 16);
+		var card = Reader.hexToCard( line.substr(2, 16));
 
 		this._busy = false;
 
@@ -216,7 +255,7 @@ class Reader extends EventEmitter {
 				break;
 				// id from reader
 			case 'I':
-				this._readerId = parseInt(line.substr(2, 2), 16);
+				this._readerId = parseInt(line.substr(2, 2), 16) || 0;
 				this.emit('id', this._readerId);
 				break;
 				// relay was manually activated
@@ -225,8 +264,8 @@ class Reader extends EventEmitter {
 				break;
 				// card list
 			case 'P':
-				if (id.length === 16) {
-					this._cards[id] = level || 1;
+				if (card) {
+					this._cards[card.id] = card.level || 2;
 					this._busy = true;
 				} else {
 					this.emit('cards', this.cards);
@@ -258,27 +297,32 @@ class Reader extends EventEmitter {
 				break;
 				// a card was added
 			case 'A':
-				this._cards[id] = level;
-				this.emit('add', id, level);
+				if(!card) { break; }
+				this._cards[card.id] = card.level;
+				this.emit('add', card.id, card.level);
 				break;
 				// a card was removed
 			case 'R':
-				delete this._cards[id];
-				this.emit('remove', id, level);
+				if(!card) { break; }
+				delete this._cards[card.id];
+				this.emit('remove', card.id, card.level);
 				break;
 				// access granted
 			case 'G':
-				this._cards[id] = level;
-				this.emit('access', id, level);
+				if(!card) { break; }
+				this._cards[card.id] = card.level;
+				this.emit('access', card.id, card.level);
 				break;
 				// unknown card
 			case 'B':
-				this.emit('unknown', id);
+				if(!card) { break; }
+				this.emit('unknown', card.id);
 				break;
 				// card found but access level too low
 			case 'N':
-				this._cards[id] = level;
-				this.emit('noaccess', id, level);
+				if(!card) { break; }
+				this._cards[card.id] = card.level;
+				this.emit('noaccess', card.id, card.level);
 				break;
 			case '?':
 				this.emit('badcommand');
@@ -296,7 +340,8 @@ class Reader extends EventEmitter {
 		}
 		if (level) {
 			level = parseInt(level, 10);
-			level = level.toString(16)
+			level = level
+				.toString(16)
 				.toUpperCase();
 		} else {
 			level = '';
@@ -350,12 +395,9 @@ class Reader extends EventEmitter {
 		}
 		level = parseInt(level, 10);
 		console.log('Reader add', id, level);
-		this._cards[id] = level;
-		var card = id.substr(2, 14);
-		card += level.toString(16)
-			.substr(-1, 1);
-		card += id.substr(0, 1);
-		this.write('A ' + card.toUpperCase(), id);
+		this._cards[id.toUpperCase()] = level;
+		var card = Reader.cardToHex({id: id, level: level});
+		this.write('A ' + card, id);
 	}
 
 	remove(id) {
@@ -363,11 +405,9 @@ class Reader extends EventEmitter {
 			throw new Error('Not open');
 		}
 		console.log('Reader remove', id);
-		delete this._cards[id];
-		var card = id.substr(2, 14);
-		card += '0';
-		card += id.substr(0, 1);
-		this.write('R ' + card.toUpperCase(), id);
+		delete this._cards[id.toUpperCase()];
+		var card = Reader.cardToHex({id: id, level: 0});
+		this.write('R ' + card, id);
 	}
 
 }

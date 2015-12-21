@@ -30,6 +30,36 @@ var push = new Push(config);
 
 cards.on('log', function(item) {
 
+	// filter log events to send a push for
+	switch (item.type) {
+		case 'DOOR':
+		case 'ACCESS':
+		case 'NOACCESS':
+		case 'OPENED':
+			break; // continue
+		default:
+			return; // abort
+	}
+
+	// build array of tokens to push to
+	var pushTokens = [];
+	config.users.forEach( (user) => {
+		// single token
+		if (user.pushToken) {
+			pushTokens.push(user.pushToken);
+		}
+		// array of tokens
+		if (user.pushTokens) {
+			pushTokens = pushTokens.concat(user.pushTokens);
+		}
+	});
+
+	// abort if there are no tokens
+	if (!pushTokens.length) {
+		return;
+	}
+
+	// convert text timestamp into ms epoch datetime
 	if (item.timestamp) {
 		var timeParts = item.timestamp.split(/[-: ]/);
 		timeParts[1]--;
@@ -38,30 +68,23 @@ cards.on('log', function(item) {
 		item.ms = Date.now();
 	}
 
-	switch (item.type) {
-		case 'DOOR':
-		case 'ACCESS':
-		case 'NOACCESS':
-		case 'OPENED':
-			if (item.cardid) {
-				cards.getCard(item.cardid, function(err, card) {
-					if (card) {
-						push.send({
-							item: item,
-							card: card
-						});
-					} else {
-						push.send({
-							item: item
-						});
-					}
-				});
-			} else {
-				push.send({
-					item: item
-				});
+	var payload = {
+		item: item
+	};
+
+	// if log item has a card id then fetch card from db and send push
+	if (item.cardid) {
+		cards.getCard(item.cardid, function(err, card) {
+			if (card) {
+				payload.card = card;
 			}
+			push.send(payload, pushTokens);
+		});
+	} else {
+		// else push straight away
+		push.send(payload, pushTokens);
 	}
+
 });
 
 // Create app server

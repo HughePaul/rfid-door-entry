@@ -1,2 +1,4 @@
 
 require('./DummySerialPort');
+
+require('./Push');

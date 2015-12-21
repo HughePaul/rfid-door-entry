@@ -2,41 +2,29 @@
 
 var GCM = require('node-gcm');
 
-function Push(config) {
-	this.config = config;
+class Push {
+	constructor(config) {
+		this.config = config;
 
-	this.gcm = new GCM.Sender(this.config.push.key);
+		this.gcm = new GCM.Sender(this.config.push.key);
+	}
+
+	send(payload, tokens) {
+
+		var message = new GCM.Message({
+			collapseKey: '' + Date.now(),
+			delayWhileIdle: false,
+			timeToLive: this.config.push.expiry || 86400,
+			data: payload
+		});
+
+		console.log('Sending push');
+		this.gcm.sendNoRetry(message, tokens, (err, result) => {
+			if (err) {
+				console.error('Push error:', err);
+			}
+		});
+	}
 }
-
-Push.prototype.send = function(payload) {
-	var pushTokens = [];
-	for (var name in this.config.users) {
-		// single token
-		if (this.config.users[name].pushToken) {
-			pushTokens.push(this.config.users[name].pushToken);
-		}
-		// array of tokens
-		if (this.config.users[name].pushTokens) {
-			pushTokens = pushTokens.concat(this.config.users[name].pushTokens);
-		}
-	}
-	if (!pushTokens.length) {
-		return;
-	}
-
-	var message = new GCM.Message({
-		collapseKey: '' + Date.now(),
-		delayWhileIdle: false,
-		timeToLive: this.config.push.expiry || 86400,
-		data: payload
-	});
-
-	console.log('Sending push');
-	this.gcm.sendNoRetry(message, pushTokens, function(err, result) {
-		if (err) {
-			console.error('Push error:', err);
-		}
-	});
-};
 
 module.exports = Push;

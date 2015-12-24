@@ -43,7 +43,9 @@ cards.on('log', function(item) {
 
 	// build array of tokens to push to
 	var pushTokens = [];
-	config.users.forEach( (user) => {
+	for(var name in config.users) {
+		var user = config.user[name];
+
 		// single token
 		if (user.pushToken) {
 			pushTokens.push(user.pushToken);

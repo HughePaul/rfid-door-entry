@@ -8,7 +8,7 @@ var Throttle = require('./throttle');
 var pad = (v, l) => {
 	v = (v + '').substr(0,l);
 	while (v.length < l) {
-		v = v = '0';
+		v = v + '0';
 	}
 	return v;
 };

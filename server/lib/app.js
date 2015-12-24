@@ -54,7 +54,7 @@ cards.on('log', function(item) {
 		if (user.pushTokens) {
 			pushTokens = pushTokens.concat(user.pushTokens);
 		}
-	});
+	}
 
 	// abort if there are no tokens
 	if (!pushTokens.length) {

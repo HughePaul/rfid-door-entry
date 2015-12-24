@@ -148,8 +148,13 @@ window.onload = function() {
 		login.style.display = 'none';
 		cardCache = cards;
 		cardsDiv.innerHTML = '';
+		var cardsArray = [];
 		for (var id in cards) {
-			updateCard(id, cards[id]);
+			cardsArray.push(cards[id]);
+		}
+		cardsArray.sort(function(a,b){ return b.name.localeCompare(a.name); });
+		for (var i = 0; i < cardsArray.length; i++) {
+			updateCard(cardsArray[i].id, cardsArray[i]);
 		}
 		addBtn.disabled = false;
 	}

@@ -20,12 +20,17 @@
     "node-gcm": "latest"
   },
   "devDependencies": {
+    "chai": "^3.4.1",
+    "eslint": "^1.10.3",
+    "istanbul": "^0.4.1",
     "mocha": "2.3.x",
-    "chai": "3.4.x",
-    "mockery": "latest",
-    "sinon": "latest"
+    "mockery": "^1.4.0",
+    "sinon": "latest",
+    "sinon-chai": "^2.8.0"
   },
   "scripts": {
+    "lint": "./node_modules/.bin/eslint . || true",
+    "cover": "./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- --reporter dot --recursive test/ ",
     "test": "./node_modules/.bin/mocha"
   }
 }

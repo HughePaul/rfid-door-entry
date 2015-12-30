@@ -1,12 +1,21 @@
-server/node_modules
+# IDE - JetBrains (IntellJ, Webstorm, etc)
+*.iml
+.idea
+
+# IDE - Sublime 
 rfid-door-entry.sublime-workspace
 rfid-door-entry.sublime-project
-cards.sqlite
-rfid-door-entry.X
+
+# Node
+server/node_modules
 config.json
+
+# Chrome Extension
 DoorEntryExtension.pem
 DoorEntryExtension.crx
 DoorEntryExtension.zip
+
+# C
 /hardware/nbproject/private/
 /hardware/entry.X/nbproject/private/
 /hardware/entry.X/build/default/
@@ -14,3 +23,16 @@ DoorEntryExtension.zip
 .map
 Makefile-genesis.properties
 Makefile-variables.mk
+
+# Local Database
+cards.sqlite
+
+# Temp Files
+rfid-door-entry.X
+
+# Logs
+npm-debug.log
+server/npm-debug.log
+
+# Generated
+server/coverage

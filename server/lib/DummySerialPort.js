@@ -191,7 +191,7 @@ class DummySerialPort extends EventEmitter {
 	_parseIncomming(buffer) {
 		// check buffer isn't out of range
 		for (var i = 0; i < buffer.length; i++) {
-			if (buffer[i] < 10 || buffer[i] > 'Z') {
+			if (buffer[i] < 10 || buffer[i] > 90) {
 				throw new Error('Bad data sent to ' + this._options.name + ': ', buffer[i]);
 			}
 		}

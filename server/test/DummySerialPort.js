@@ -4,6 +4,7 @@ var mocha = require('mocha');
 
 var chai = require('chai');
 var should = chai.should();
+var sinon = require('sinon');
 
 var DummySerialPort = require('../lib/DummySerialPort');
 
@@ -32,10 +33,10 @@ var checkParserResponse = (expected, done, maxTime) => {
 
 var sendCommand = (port, command) => {
   // send a new line wrapped command to serial port after a short delay to allow it to open
-  setTimeout( () => {
+  port.on('open', () => {
     var data = new Buffer('\r\n' + command + '\r\n', 'ascii');
     port.write(data);
-  }, 10);
+  });
 };
 
 describe('DummySerialPort', () => {
@@ -199,6 +200,58 @@ describe('DummySerialPort', () => {
     });
   });
 
+  describe('adding an unknown card through serial', () => {
+    it('should send a card added response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse('A 1234567890123574', done),
+        replyDelay: 1,
+        level: 6,
+        cards: [ { id: '4-12345678901234', level: 5 } ]
+      });
+
+      sendCommand(port, 'A 1234567890123574');
+    });
+  });
+
+  describe('updating a known card through serial', () => {
+    it('should send a card added response with new level', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse('A 1234567890123474', done),
+        replyDelay: 1,
+        level: 6,
+        cards: [ { id: '4-12345678901234', level: 5 } ]
+      });
+
+      sendCommand(port, 'A 1234567890123474');
+    });
+  });
+
+  describe('removing a known card through serial', () => {
+    it('should send a card removed response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse('R 1234567890123454', done),
+        replyDelay: 1,
+        level: 6,
+        cards: [ { id: '4-12345678901234', level: 5 } ]
+      });
+
+      sendCommand(port, 'R 1234567890123474');
+    });
+  });
+
+  describe('removing an unknown card through serial', () => {
+    it('should send an error response', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: checkParserResponse('! 50', done),
+        replyDelay: 1,
+        level: 6,
+        cards: [ { id: '4-12345678901234', level: 5 } ]
+      });
+
+      sendCommand(port, 'R 1234567890123574');
+    });
+  });
+
   describe('getting current level', () => {
     it('should send a level response', (done) => {
       var port = new DummySerialPort(null, {
@@ -286,6 +339,61 @@ describe('DummySerialPort', () => {
     });
   });
 
+  describe('sending unknown char', () => {
+    it('should throw an error', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: () => 0,
+        replyDelay: 1,
+        level: 6,
+        cards: [ { id: '4-12345678901234', level: 5 } ]
+      });
+
+      port.on('open', () => {
+        should.throw( () => {
+          port.write(new Buffer('\r\n' + String.fromCharCode(9) + '\r\n', 'ascii'));
+        });
+        should.throw( () => {
+          port.write(new Buffer('\r\na\r\n', 'ascii'));
+        });
+        done();
+      });
+    });
+  });
+
+  describe('sending data too early', () => {
+    it('should throw an error', () => {
+      var port = new DummySerialPort(null, {
+        parser: () => 0,
+        replyDelay: 1,
+        level: 6,
+        cards: [ { id: '4-12345678901234', level: 5 } ]
+      });
+
+      should.throw( () => {
+        port.write(new Buffer('\r\nI\r\n', 'ascii'));
+      });
+
+    });
+  });
+
+  describe('sending data while busy', () => {
+    it('should throw an error', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: () => 0,
+        replyDelay: 1,
+        level: 6,
+        cards: [ { id: '4-12345678901234', level: 5 } ]
+      });
+
+      port.on('open', () => {
+        port.write(new Buffer('\r\nI\r\n', 'ascii'));
+        should.throw( () => {
+          port.write(new Buffer('\r\nI\r\n', 'ascii'));
+        });
+        done();
+      });
+    });
+  });
 
   describe('manually opening the door', () => {
     it('should send a door open and door close response', (done) => {
@@ -303,6 +411,31 @@ describe('DummySerialPort', () => {
       port.manuallyOpenDoor();
     });
   });
+
+  describe('close port', () => {
+    it('should emit close event only once opened', (done) => {
+      var port = new DummySerialPort(null, {
+        parser: () => 0,
+        replyDelay: 1,
+        level: 6,
+        cards: [ { id: '4-12345678901234', level: 5 } ]
+      });
+
+      var spy = sinon.spy()
+ 
+      port.on('close', spy);
+
+      port.close();
+ 
+      port.on('open', () => {
+        port.close();
+        sinon.assert.calledOnce(spy);
+        done();
+      });
+
+    });
+  });
+
 
 });
 

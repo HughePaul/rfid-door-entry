@@ -1,5 +1,7 @@
 'use strict';
 
+/*global io*/
+
 window.onload = function() {
 
 	var login = document.getElementById('login');
@@ -37,7 +39,7 @@ window.onload = function() {
 		checkboxMouse = true;
 		event.preventDefault();
 	};
-	var checkboxOver = function(event) {
+	var checkboxOver = function() {
 		if (checkboxMouse) {
 			this.checked = checkboxValue;
 		}
@@ -46,7 +48,7 @@ window.onload = function() {
 		checkboxMouse = false;
 		event.preventDefault();
 	};
-	var checkboxCancel = function(event) {
+	var checkboxCancel = function() {
 		checkboxMouse = false;
 	};
 	var pattern = [];
@@ -166,7 +168,7 @@ window.onload = function() {
 		for(var i=0; i < newReaders.length; i++) {
 			(function(reader) {
 				readers[reader.name] = reader;
-				reader.id = reader.name.replace(/[^A-Za-z0-9]/g,'_');;
+				reader.id = reader.name.replace(/[^A-Za-z0-9]/g,'_');
 				var button = document.createElement('button');
 				button.id = 'openBtn' + reader.id;
 				button.textContent = 'Open ' + reader.name;
@@ -355,7 +357,9 @@ window.onload = function() {
 				if (jsonCard) {
 					card = jsonCard;
 				}
-			} catch (e) {}
+			} catch (e) {
+				console.log('Bad item description:', item.desc);
+			}
 		}
 
 		if (card) {

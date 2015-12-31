@@ -158,14 +158,14 @@ function Cards(config, readers) {
 					if (current !== last) {
 						if (current) {
 							console.log('Enable card on timer', details.name, id);
-							that.readers.forEach(function(reader){
-	  						reader.add(id, details.level);
-  						});
+							that.readers.forEach(function(reader) {
+								reader.add(id, details.level);
+							});
 						} else {
 							console.log('Disable card on timer', id);
-							that.readers.forEach(function(reader){
-	  						reader.add(id, 1);
-  						});
+							that.readers.forEach(function(reader) {
+								reader.add(id, 1);
+							});
 						}
 					}
 				}
@@ -191,7 +191,7 @@ function Cards(config, readers) {
 				return console.error('Cards:db:', err);
 			}
 
-			that.readers.forEach(function(reader){
+			that.readers.forEach(function(reader) {
 
 				try {
 					// if card is not on reader or level has changed then remove and add with new level
@@ -294,7 +294,7 @@ function Cards(config, readers) {
 					}
 				});
 			});
-			that.readers.forEach(function(reader){
+			that.readers.forEach(function(reader) {
 				try {
 					if (reader.cards[id]) {
 						console.log('Remove card from reader', reader.name, id);
@@ -304,7 +304,7 @@ function Cards(config, readers) {
 						cb(id, card);
 					}
 				} catch (e) {
-					console.error('Reader', reader.name,'error:', e);
+					console.error('Reader', reader.name, 'error:', e);
 				}
 			});
 			that.emit('card', id);
@@ -331,7 +331,7 @@ function Cards(config, readers) {
 		return that;
 	};
 
-	that.readers.forEach(function(reader){
+	that.readers.forEach(function(reader) {
 
 		reader
 			.on('close', function() {
@@ -423,7 +423,7 @@ function Cards(config, readers) {
 					});
 				});
 			})
-			.on('remove', function(id, level) {
+			.on('remove', function(id) {
 				that.updateCard(id, {
 					level: 0
 				}, function(id, card) {
@@ -437,7 +437,7 @@ function Cards(config, readers) {
 				});
 			})
 			.on('level', function(level) {
-				if(level !== that.level) {
+				if (level !== that.level) {
 					reader.setLevel(that.level);
 				}
 			})
@@ -447,16 +447,22 @@ function Cards(config, readers) {
 			})
 			.on('door', function(state) {
 				//			that.addLog({reader: reader.name, type: 'DOOR', desc: state});
-				if(state === Reader.DOOR_MANUAL) {
-					that.addLog({reader: reader.name, type: 'DOOR', desc: 'Door manually opened'});
+				if (state === Reader.DOOR_MANUAL) {
+					that.addLog({
+						reader: reader.name,
+						type: 'DOOR',
+						desc: 'Door manually opened'
+					});
 				}
 				that.emit('door', reader.name, state);
 			});
 	});
 
 	this.activate = function(readerName, loggedInUsername, cb) {
-		that.readers.forEach(function(reader){
-			if(reader.name != readerName) { return; }
+		that.readers.forEach(function(reader) {
+			if (reader.name != readerName) {
+				return;
+			}
 			reader.activate(function() {
 				that.addLog({
 					reader: reader.name,
@@ -475,17 +481,19 @@ function Cards(config, readers) {
 		that.level = parseInt(level, 10) || 15;
 		that.saveLevel();
 		var responses = 0;
-		that.readers.forEach(function(reader){
-			reader.setLevel(that.level , function(level) {
+		that.readers.forEach(function(reader) {
+			reader.setLevel(that.level, function(level) {
 				that.addLog({
 					reader: reader.name,
 					type: 'LEVEL',
 					desc: 'Security level changed by ' + loggedInUsername,
-					level: level 
+					level: level
 				});
 				responses++;
 				if (responses === that.readers.length) {
-					if(cb) { cb(level, loggedInUsername); }
+					if (cb) {
+						cb(level, loggedInUsername);
+					}
 					that.emit('level', that.level);
 				}
 			});

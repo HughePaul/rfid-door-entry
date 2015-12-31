@@ -19,7 +19,7 @@ class Push {
 		});
 
 		console.log('Sending push');
-		this.gcm.sendNoRetry(message, tokens, (err, result) => {
+		this.gcm.sendNoRetry(message, tokens, (err /*, result */) => {
 			if (err) {
 				console.error('Push error:', err);
 			}

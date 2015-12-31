@@ -1,6 +1,6 @@
 'use strict';
 
-var mocha = require('mocha');
+require('mocha');
 
 var chai = require('chai');
 var should = chai.should();
@@ -10,17 +10,17 @@ var DummySerialPort = require('../lib/DummySerialPort');
 
 var checkParserResponse = (expected, done, maxTime) => {
   // expected is a list of response lines
-  if(!Array.isArray(expected)) {
+  if (!Array.isArray(expected)) {
     expected = [expected];
   }
   maxTime = maxTime || 500;
   var data = '';
 
-  setTimeout( () => {
+  setTimeout(() => {
     // filter new line delimitered data into array of non-empty response lines
     var found = data
       .split('\r\n')
-      .filter( (line) => line !== '' );
+      .filter((line) => line !== '');
     found.should.deep.equal(expected);
     done();
   }, maxTime);
@@ -55,79 +55,95 @@ describe('DummySerialPort', () => {
     });
   });
 
-
   describe('cardToHex', () => {
 
     it('should return fail if no card given', () => {
-      should.throw( () => {
+      should.throw(() => {
         DummySerialPort.cardToHex();
       }, /No card id specified/);
-      should.throw( () => {
+      should.throw(() => {
         DummySerialPort.cardToHex({});
       }, /No card id specified/);
-      should.throw( () => {
-        DummySerialPort.cardToHex({id:1234});
+      should.throw(() => {
+        DummySerialPort.cardToHex({
+          id: 1234
+        });
       }, /No card id specified/);
     });
 
     it('should return valid hex card with no level', () => {
-      var hex = DummySerialPort.cardToHex({id:'4-12345678901234'});
+      var hex = DummySerialPort.cardToHex({
+        id: '4-12345678901234'
+      });
       hex.should.equal('1234567890123404');
     });
 
-
     it('should return valid hex card with level', () => {
-      var hex = DummySerialPort.cardToHex({id:'4-12345678901234', level: 7});
+      var hex = DummySerialPort.cardToHex({
+        id: '4-12345678901234',
+        level: 7
+      });
       hex.should.equal('1234567890123474');
     });
 
   });
 
-
   describe('hexToCard', () => {
 
     it('should return fail if no card given', () => {
-      should.throw( () => {
+      should.throw(() => {
         DummySerialPort.hexToCard();
       }, /No card hex specified/);
-      should.throw( () => {
+      should.throw(() => {
         DummySerialPort.hexToCard(1234);
       }, /No card hex specified/);
     });
 
     it('should return valid card record', () => {
       var hex = DummySerialPort.hexToCard('1234567890123494');
-      hex.should.deep.equal({id:'4-12345678901234', level: 9});
+      hex.should.deep.equal({
+        id: '4-12345678901234',
+        level: 9
+      });
     });
 
   });
 
   describe('constuctor', () => {
     it('should complain if no options are given', () => {
-      should.throw( () => {
+      should.throw(() => {
         new DummySerialPort();
       }, /Options not specified/);
     });
 
     it('should complain if no parser function is given', () => {
-      should.throw( () => {
+      should.throw(() => {
         new DummySerialPort(null, {});
       }, /Parser function not specified/);
-      should.throw( () => {
-        new DummySerialPort(null, {parser: 1234});
+      should.throw(() => {
+        new DummySerialPort(null, {
+          parser: 1234
+        });
       }, /Parser function not specified/);
-      should.not.throw( () => {
-        new DummySerialPort(null, {parser: () => 0});
+      should.not.throw(() => {
+        new DummySerialPort(null, {
+          parser: () => 0
+        });
       }, /Parser function not specified/);
     });
 
     it('should assign a name if one is not given', () => {
-      var port = new DummySerialPort(null, {parser: () => 0});
+      var port = new DummySerialPort(null, {
+        parser: () => 0
+      });
       port.name.should.match(/^DummySerialPort\d+$/);
     });
 
     it('should eventually fire open event', (done) => {
-      var port = new DummySerialPort(null, {parser: () => 0, replyDelay: 100});
+      var port = new DummySerialPort(null, {
+        parser: () => 0,
+        replyDelay: 100
+      });
       port.on('open', done);
     });
 
@@ -140,11 +156,14 @@ describe('DummySerialPort', () => {
           'G 1234567890123454',
           'D R',
           'D C'
-          ], done),
+        ], done),
         replyDelay: 1,
         level: 4,
         doorOpeningDelay: 5,
-        cards: [ { id: '4-12345678901234', level: 5 } ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }]
       });
 
       port.presentCard('4-12345678901234');
@@ -157,7 +176,10 @@ describe('DummySerialPort', () => {
         parser: checkParserResponse('N 1234567890123454', done),
         replyDelay: 1,
         level: 6,
-        cards: [ { id: '4-12345678901234', level: 5 } ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }]
       });
 
       port.presentCard('4-12345678901234');
@@ -168,7 +190,8 @@ describe('DummySerialPort', () => {
     it('should send an unknown card response', (done) => {
       var port = new DummySerialPort(null, {
         parser: checkParserResponse('B 1234567890123504', done),
-        replyDelay: 1});
+        replyDelay: 1
+      });
 
       port.presentCard('4-12345678901235');
     });
@@ -180,7 +203,10 @@ describe('DummySerialPort', () => {
         parser: checkParserResponse('A 1234567890123564', done),
         replyDelay: 1,
         level: 6,
-        cards: [ { id: '4-12345678901234', level: 5 } ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }]
       });
 
       port.programCard('4-12345678901235');
@@ -193,7 +219,10 @@ describe('DummySerialPort', () => {
         parser: checkParserResponse('R 1234567890123454', done),
         replyDelay: 1,
         level: 6,
-        cards: [ { id: '4-12345678901234', level: 5 } ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }]
       });
 
       port.programCard('4-12345678901234');
@@ -206,7 +235,10 @@ describe('DummySerialPort', () => {
         parser: checkParserResponse('A 1234567890123574', done),
         replyDelay: 1,
         level: 6,
-        cards: [ { id: '4-12345678901234', level: 5 } ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }]
       });
 
       sendCommand(port, 'A 1234567890123574');
@@ -219,7 +251,10 @@ describe('DummySerialPort', () => {
         parser: checkParserResponse('A 1234567890123474', done),
         replyDelay: 1,
         level: 6,
-        cards: [ { id: '4-12345678901234', level: 5 } ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }]
       });
 
       sendCommand(port, 'A 1234567890123474');
@@ -232,7 +267,10 @@ describe('DummySerialPort', () => {
         parser: checkParserResponse('R 1234567890123454', done),
         replyDelay: 1,
         level: 6,
-        cards: [ { id: '4-12345678901234', level: 5 } ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }]
       });
 
       sendCommand(port, 'R 1234567890123474');
@@ -245,7 +283,10 @@ describe('DummySerialPort', () => {
         parser: checkParserResponse('! 50', done),
         replyDelay: 1,
         level: 6,
-        cards: [ { id: '4-12345678901234', level: 5 } ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }]
       });
 
       sendCommand(port, 'R 1234567890123574');
@@ -282,13 +323,17 @@ describe('DummySerialPort', () => {
         parser: checkParserResponse([
           'P 1234567890123454',
           'P FEDCBA98765432B2',
-          'P'], done),
+          'P'
+        ], done),
         replyDelay: 1,
         level: 6,
-        cards: [
-          { id: '4-12345678901234', level: 5 },
-          { id: '2-FEDCBA98765432', level: 11 }
-        ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }, {
+          id: '2-FEDCBA98765432',
+          level: 11
+        }]
       });
 
       sendCommand(port, 'P');
@@ -319,7 +364,7 @@ describe('DummySerialPort', () => {
         replyDelay: 1,
         id: 12,
         level: 6,
-        doorOpeningDelay: 5,
+        doorOpeningDelay: 5
       });
 
       sendCommand(port, 'O');
@@ -345,14 +390,17 @@ describe('DummySerialPort', () => {
         parser: () => 0,
         replyDelay: 1,
         level: 6,
-        cards: [ { id: '4-12345678901234', level: 5 } ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }]
       });
 
       port.on('open', () => {
-        should.throw( () => {
+        should.throw(() => {
           port.write(new Buffer('\r\n' + String.fromCharCode(9) + '\r\n', 'ascii'));
         });
-        should.throw( () => {
+        should.throw(() => {
           port.write(new Buffer('\r\na\r\n', 'ascii'));
         });
         done();
@@ -366,10 +414,13 @@ describe('DummySerialPort', () => {
         parser: () => 0,
         replyDelay: 1,
         level: 6,
-        cards: [ { id: '4-12345678901234', level: 5 } ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }]
       });
 
-      should.throw( () => {
+      should.throw(() => {
         port.write(new Buffer('\r\nI\r\n', 'ascii'));
       });
 
@@ -382,12 +433,15 @@ describe('DummySerialPort', () => {
         parser: () => 0,
         replyDelay: 1,
         level: 6,
-        cards: [ { id: '4-12345678901234', level: 5 } ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }]
       });
 
       port.on('open', () => {
         port.write(new Buffer('\r\nI\r\n', 'ascii'));
-        should.throw( () => {
+        should.throw(() => {
           port.write(new Buffer('\r\nI\r\n', 'ascii'));
         });
         done();
@@ -405,7 +459,7 @@ describe('DummySerialPort', () => {
         replyDelay: 1,
         id: 12,
         level: 6,
-        doorOpeningDelay: 5,
+        doorOpeningDelay: 5
       });
 
       port.manuallyOpenDoor();
@@ -418,15 +472,18 @@ describe('DummySerialPort', () => {
         parser: () => 0,
         replyDelay: 1,
         level: 6,
-        cards: [ { id: '4-12345678901234', level: 5 } ]
+        cards: [{
+          id: '4-12345678901234',
+          level: 5
+        }]
       });
 
       var spy = sinon.spy()
- 
+
       port.on('close', spy);
 
       port.close();
- 
+
       port.on('open', () => {
         port.close();
         sinon.assert.calledOnce(spy);
@@ -436,6 +493,4 @@ describe('DummySerialPort', () => {
     });
   });
 
-
 });
-

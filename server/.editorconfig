@@ -1,0 +1,11 @@
+# top-most EditorConfig file
+root = true
+
+# JS settings
+[lib/*.js]
+indent_style = tab
+
+[test/*.js]
+indent_style = space
+indent_size = 2
+

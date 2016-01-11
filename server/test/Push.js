@@ -6,7 +6,7 @@ chai.should();
 var mockery = require('mockery');
 var sinon = require('sinon');
 
-describe('Push', () => {
+describe('Push', function() {
 
   var sandbox;
   var Push;
@@ -18,7 +18,7 @@ describe('Push', () => {
     }
   };
 
-  beforeEach(() => {
+  beforeEach(function() {
 
     // create a sandbox
     sandbox = sinon.sandbox.create();
@@ -43,19 +43,19 @@ describe('Push', () => {
     Push = require('../lib/Push');
   });
 
-  afterEach(() => {
+  afterEach(function() {
     sandbox.restore();
     mockery.disable();
   });
 
-  describe('constructor', () => {
+  describe('constructor', function() {
 
-    it('should create a push instance', () => {
+    it('should create a push instance', function() {
       var p = new Push(pushConfig);
       p.should.be.ok;
     });
 
-    it('send should create message and send to tokens', () => {
+    it('send should create message and send to tokens', function() {
       var p = new Push(pushConfig);
       p.send({
         payload: 'value'

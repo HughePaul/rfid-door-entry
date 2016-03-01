@@ -58,6 +58,14 @@ function Cards(config, readers) {
 								return console.error(err);
 							}
 							console.log('log cards created');
+
+							if(config.cardseed) {
+								console.log('adding seed cards');
+								config.cardseed.forEach( function(card) {
+									that.updateCard(card.id, card);									
+								});
+							}
+
 						});
 					});
 				}
@@ -92,13 +100,14 @@ function Cards(config, readers) {
 			item.reader
 		], function(err) {
 			if (err) {
-				console.error('Cards:db:', err);
+				return console.error('Cards:db:', err, 'inserting log', item);
+			}
+			if(this.lastID) { item.id = this.lastID; }
+			console.log('LOG:', item);
+			if (item.type !== 'UPDATED') {
+				that.emit('log', item);
 			}
 		});
-		console.log('LOG:', item);
-		if (item.type !== 'UPDATED') {
-			that.emit('log', item);
-		}
 		return that;
 	};
 	this.saveLevel = function() {

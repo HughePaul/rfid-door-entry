@@ -1,8 +1,25 @@
+<!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8" />
 	<meta name=​"viewport" content=​"width=device-width, user-scalable=no, initial-scale=1.0, minimum-scale:​1.0, maximum-scale:​1.0"></meta>
 	<title>Door Entry</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.7/react-with-addons.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.7/react-dom.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
+
 	<script src="socket.io/socket.io.js"></script>
+
+	<script type="text/babel" src="components/card.js"></script>
+	<script type="text/babel" src="components/cardlist.js"></script>
+	<script type="text/babel" src="components/carddetails.js"></script>
+	<script type="text/babel" src="components/timepattern.js"></script>
+	<script type="text/babel" src="components/loglist.js"></script>
+	<script type="text/babel" src="components/logline.js"></script>
+	<script type="text/babel" src="vendor/inlineedit.js"></script>
+	<script type="text/babel" src="components/app.js"></script>
+
 	<script src="index.js"></script>
 	<link rel="stylesheet" type="text/css" href="index.css" />
 </head>
@@ -10,98 +27,17 @@
 	<div id="buttons">
 		<button id="logoutBtn">Log Out</button>
 		<button id="addBtn">Add Card</button>
-		<button id="removeBtn">Remove Card</button>
 		<span>Level:</span><input type="number" min="2" max="15" id="currentLevel" />
 		<span id="openBtns"></span>
 	</div>
-	<div id="cards"></div>
-	<div id="details">
-		<div id="cardavatarimg"></div>
-		<div><span>Name:</span><input type="text" id="cardname" /></div>
-		<div><span>Level:</span><input type="number" min="2" max="15" id="cardlevel" /></div>
-		<div><span>Card Id:</span><input type="text" id="cardid" /></div>
-		<div><span>Avatar URL:</span><input type="url" id="cardavatar" /></div>
-		<textarea id="cardnotes" rows="2" cols="50"></textarea>
-		<div>
-			<table id="cardPattern">
-				<tr>
-					<th colspan="2">12</th>
-					<th colspan="2">1</th>
-					<th colspan="2">2</th>
-					<th colspan="2">3</th>
-					<th colspan="2">4</th>
-					<th colspan="2">5</th>
-					<th colspan="2">6</th>
-					<th colspan="2">7</th>
-					<th colspan="2">8</th>
-					<th colspan="2">9</th>
-					<th colspan="2">10</th>
-					<th colspan="2">11</th>
-					<th></th>
-				</tr>
-				<tr>
-					<th>AM</th>
-					<td><input type="checkbox" id="cardPattern_0"/></td>
-					<td><input type="checkbox" id="cardPattern_1"/></td>
-					<td><input type="checkbox" id="cardPattern_2"/></td>
-					<td><input type="checkbox" id="cardPattern_3"/></td>
-					<td><input type="checkbox" id="cardPattern_4"/></td>
-					<td><input type="checkbox" id="cardPattern_5"/></td>
-					<td><input type="checkbox" id="cardPattern_6"/></td>
-					<td><input type="checkbox" id="cardPattern_7"/></td>
-					<td><input type="checkbox" id="cardPattern_8"/></td>
-					<td><input type="checkbox" id="cardPattern_9"/></td>
-					<td><input type="checkbox" id="cardPattern_10"/></td>
-					<td><input type="checkbox" id="cardPattern_11"/></td>
-					<td><input type="checkbox" id="cardPattern_12"/></td>
-					<td><input type="checkbox" id="cardPattern_13"/></td>
-					<td><input type="checkbox" id="cardPattern_14"/></td>
-					<td><input type="checkbox" id="cardPattern_15"/></td>
-					<td><input type="checkbox" id="cardPattern_16"/></td>
-					<td><input type="checkbox" id="cardPattern_17"/></td>
-					<td><input type="checkbox" id="cardPattern_18"/></td>
-					<td><input type="checkbox" id="cardPattern_19"/></td>
-					<td><input type="checkbox" id="cardPattern_20"/></td>
-					<td><input type="checkbox" id="cardPattern_21"/></td>
-					<td><input type="checkbox" id="cardPattern_22"/></td>
-					<td><input type="checkbox" id="cardPattern_23"/></td>
-				</tr>
-				<tr>
-					<th>PM</th>
-					<td><input type="checkbox" id="cardPattern_24"/></td>
-					<td><input type="checkbox" id="cardPattern_25"/></td>
-					<td><input type="checkbox" id="cardPattern_26"/></td>
-					<td><input type="checkbox" id="cardPattern_27"/></td>
-					<td><input type="checkbox" id="cardPattern_28"/></td>
-					<td><input type="checkbox" id="cardPattern_29"/></td>
-					<td><input type="checkbox" id="cardPattern_30"/></td>
-					<td><input type="checkbox" id="cardPattern_31"/></td>
-					<td><input type="checkbox" id="cardPattern_32"/></td>
-					<td><input type="checkbox" id="cardPattern_33"/></td>
-					<td><input type="checkbox" id="cardPattern_34"/></td>
-					<td><input type="checkbox" id="cardPattern_35"/></td>
-					<td><input type="checkbox" id="cardPattern_36"/></td>
-					<td><input type="checkbox" id="cardPattern_37"/></td>
-					<td><input type="checkbox" id="cardPattern_38"/></td>
-					<td><input type="checkbox" id="cardPattern_39"/></td>
-					<td><input type="checkbox" id="cardPattern_40"/></td>
-					<td><input type="checkbox" id="cardPattern_41"/></td>
-					<td><input type="checkbox" id="cardPattern_42"/></td>
-					<td><input type="checkbox" id="cardPattern_43"/></td>
-					<td><input type="checkbox" id="cardPattern_44"/></td>
-					<td><input type="checkbox" id="cardPattern_45"/></td>
-					<td><input type="checkbox" id="cardPattern_46"/></td>
-					<td><input type="checkbox" id="cardPattern_47"/></td>
-				</tr>
-			</table>
-		</div>
-		<button id="saveBtn">Save</button>
-	</div>
-	<div id="log"></div>
+
+  <section id="doorapp"></section>
+
 	<div id="login">
 		<span>Username: </span><input type="text" id="username" />
 		<span>Password: </span><input type="password" id="password" />
 		<button id="loginBtn">Login</button>
 	<div> 
+
 </body>
 </html>

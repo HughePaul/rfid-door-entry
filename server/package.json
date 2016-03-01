@@ -29,6 +29,8 @@
     "sinon-chai": "^2.8.0"
   },
   "scripts": {
+    "start": "node ./ >> doorentry.log 2>&1 &\necho $! > doorentry.pid",
+    "stop": "kill $(cat doorentry.pid) && rm -f doorentry.pid",
     "lint": "./node_modules/.bin/eslint . || true",
     "cover": "./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- --reporter dot --recursive test/ ",
     "test": "./node_modules/.bin/mocha"

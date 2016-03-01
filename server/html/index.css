@@ -18,10 +18,6 @@ body > div {
 	height: 0;
 }
 
-input, textarea {
-	font-size: 17px;
-	padding: 3px;
-}
 
 #buttons {
 	position: absolute;
@@ -34,6 +30,10 @@ input, textarea {
 }
 #logoutBtn {
 	float: right;
+}
+
+input {
+	font-size: 17px;
 }
 
 button {
@@ -55,17 +55,17 @@ button.doorOpened {
 button.manuallyOpened {
 	background-color: #f8f;
 }
-#cardPattern {
+.cardPattern {
 	cursor: hand;
 	margin: 0px;
 	padding: 0;
 	margin-bottom: 3px;
 }
-#cardPattern th {
+.cardPattern th {
 	padding-left: 4px;
 	padding-right: 4px;
 }
-#cardPattern input[type=checkbox] {
+.cardPattern input[type=checkbox] {
 	cursor: hand;
 	-moz-appearance:none;
 	-webkit-appearance:none;
@@ -79,17 +79,17 @@ button.manuallyOpened {
 	outline: solid 2px #ccc;
 	background-color: #f22
 }
-#cardPattern input[type=checkbox]:checked {
+.cardPattern input[type=checkbox]:checked {
 	background-color: #2f2;
 }
-#cardPattern input[type=checkbox].currentHour {
+.cardPattern input[type=checkbox].currentHour {
 	outline: solid 2px #33f !important;
 }
-#cardPattern input[type=checkbox]:disabled {
+.cardPattern input[type=checkbox]:disabled {
 	background-color: #888 !important;
 }
 
-#cards {
+.cardlist {
 	position: absolute;
 	top: 40px;
 	left: 5px;
@@ -101,43 +101,84 @@ button.manuallyOpened {
 	background-color: #eee;
 }
 
-#details {
+.details {
 	position: absolute;
 	top: 40px;
 	left: 255px;
 	right: 5px;
-	height: 280px;
+	height: 310px;
 	padding: 6px;
-	overflow: auto;
 	overflow: auto;
 	border-radius: 7px;
 	background-color: #eee;
 }
 
-#details span {
-	display: inline-block;
-	width: 120px;
-}
 
-#cardavatarimg {
+.details .cardavatarimg {
 	position: inline-block;
 	float: left;
 	left: 10px;
 	background-size: 100%;
 	background-position: center top;
 	background-repeat: no-repeat;
-	width: 110px;
+	width: 130px;
 	height: 130px;
 	margin-right: 10px;
 	border: solid 1px #888;
 	border-radius: 5px;
+	margin: 10px
+}
+.details div {
+	padding: 2px;
+	min-height: 1.5em;
+}
+.details label {
+	display: inline-block;
+	width: 6em;
+	line-height: 1em;
+	vertical-align: top;
+	padding: 5px;
 }
 
-#log {
+.details span, .details input, .details pre, .details textarea {
+	width: 50%;
+}
+.details span, .details pre {
+	display: inline-block;
+	background-color: #ccc;
+	padding: 2px;
+	cursor: text;
+}
+.details span {
+	white-space: nowrap;
+	overflow: scroll;
+}
+.details span, .details input {
+	line-height: 1em;
+	min-height: 1em;
+	font-size: 17px;
+}
+.details pre, .details textarea {
+	font-size: 12px;
+	min-height: 3em;
+}
+.details pre {
+	overflow-wrap: break-word;
+	overflow: visible;
+}
+.details textarea {
+	margin-top: 11px;
+	margin-bottom: 11px;
+}
+
+
+
+
+.loglist {
 	position: absolute;
 	left: 255px;
 	right: 5px;
-	top: 340px;
+	top: 370px;
 	bottom: 5px;
 	padding: 6px;
 	overflow: auto;
@@ -153,11 +194,18 @@ button.manuallyOpened {
 	border-radius: 5px;
 	padding: 2px;
 	margin-bottom: 5px;
-	cursor: hand;
+	cursor: pointer;
 	-moz-box-shadow: 0 1px 5px #888;
 	-webkit-box-shadow: 0 1px 3px #888;
 	box-shadow: 0 1px 5px #888;	
 	background-color: #ccf;
+}
+.card * {
+		cursor: pointer;
+}
+.selected.card {
+	border: solid 1px #222;
+	background-color: #aad;
 }
 
 .log {

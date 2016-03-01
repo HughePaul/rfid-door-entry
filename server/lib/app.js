@@ -267,4 +267,7 @@ readers.forEach(function(reader) {
 });
 
 // start server listening
-server.listen(config.port);
+server.listen(config.port, function(){
+	console.log('Listening on port', config.port);
+});
+

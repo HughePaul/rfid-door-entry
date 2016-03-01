@@ -10,19 +10,9 @@ window.onload = function() {
 	var loginBtn = document.getElementById('loginBtn');
 	var logoutBtn = document.getElementById('logoutBtn');
 
-	var addBtn = document.getElementById('addBtn');
-	var currentLevel = document.getElementById('currentLevel');
-	var openBtns = document.getElementById('openBtns');
-
-	addBtn.disabled = true;
-	currentLevel.disabled = true;
-
 	// connect socket and listen to events
 	var socket = io.connect();
 	window.socket = socket;
-
-	var cardCache = {};
-	var readers = [];
 
 	socket.on('connect', function() {
 		var username = sessionStorage.getItem('username');
@@ -33,9 +23,7 @@ window.onload = function() {
 	socket.on('auth', function(username, cookie, readers) {
 		sessionStorage.setItem('username', username);
 		sessionStorage.setItem('cookie', cookie);
-		updateReaders(readers);
-		addBtn.disabled = false;
-		currentLevel.disabled = false;
+		window.app && app.setReaders(readers);
 		hideLogin();
 	});
 
@@ -44,7 +32,6 @@ window.onload = function() {
 		sessionStorage.setItem('cookie', '');
 		reset();
 		showLogin();
-		updateReaders();
 	});
 
 	socket.on('error', function(err) {
@@ -72,11 +59,11 @@ window.onload = function() {
 	});
 
 	socket.on('level', function(level) {
-		currentLevel.value = level;
+		window.app && app.setLevel(level);
 	});
 
 	socket.on('door', function(readerName, doorState) {
-		updateReaderBtn(readerName, doorState);
+		window.app && app.updateReader(readerName, doorState);
 	});
 
 	var authing = false;
@@ -84,56 +71,30 @@ window.onload = function() {
 	function reset() {
 		window.app && app.setCards({});
 		window.app && app.setLogs([]);
-		addBtn.disabled = true;
 	}
 
-	function updateReaders(newReaders) {
-		readers = {};
-		openBtns.innerHTML = '';
-		if(!newReaders) { return; }
-		for(var i=0; i < newReaders.length; i++) {
-			(function(reader) {
-				readers[reader.name] = reader;
-				reader.id = reader.name.replace(/[^A-Za-z0-9]/g,'_');
-				var button = document.createElement('button');
-				button.id = 'openBtn' + reader.id;
-				button.textContent = 'Open ' + reader.name;
-				openBtns.appendChild(button);
-
-				button.onclick = function() {
-					if (confirm('Are you sure you want to open the '+reader.name+' door?')) {
-						console.log('Open', reader.name);
-						socket.emit('open', reader.name);
-					}
-				};
-
-				updateReaderBtn(reader);
-			})(newReaders[i]);
-		}
-	}
-
-	function updateReaderBtn(reader, doorState) {
-		if(typeof reader === 'string') {
-			reader = readers[reader];
-		}
-		if(!reader) { return; }
-		if(doorState) {
-			reader.door = doorState;			
-		}
-		var btn = document.getElementById('openBtn' + reader.id);
-		if(!btn) { return; }
-		switch(reader.door) {
-			case 'Door Opened':
-				btn.className = 'doorOpened';
-				break;
-			case 'Manually Opened':
-				btn.className = 'manuallyOpened';
-				break;
-			case 'Door Closed':
-			default:
-				btn.className = '';
-		}
-	}
+	// function updateReaderBtn(reader, doorState) {
+	// 	if(typeof reader === 'string') {
+	// 		reader = readers[reader];
+	// 	}
+	// 	if(!reader) { return; }
+	// 	if(doorState) {
+	// 		reader.door = doorState;			
+	// 	}
+	// 	var btn = document.getElementById('openBtn' + reader.id);
+	// 	if(!btn) { return; }
+	// 	switch(reader.door) {
+	// 		case 'Door Opened':
+	// 			btn.className = 'doorOpened';
+	// 			break;
+	// 		case 'Manually Opened':
+	// 			btn.className = 'manuallyOpened';
+	// 			break;
+	// 		case 'Door Closed':
+	// 		default:
+	// 			btn.className = '';
+	// 	}
+	// }
 
 
 
@@ -179,20 +140,6 @@ window.onload = function() {
 		login.style.display = 'none';
 	}
 
-	addBtn.onclick = function() {
-		window.app && app.handleNewCard();
-	};
-
-	currentLevel.onchange = function() {
-		var newLevel = currentLevel.value;
-		console.log('Change level:', newLevel);
-		socket.emit('level', newLevel);
-	};
-
-	logoutBtn.onclick = function() {
-		console.log('Logout');
-		socket.emit('logout');
-	};
 
 
 	reset();

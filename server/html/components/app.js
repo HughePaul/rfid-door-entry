@@ -5,10 +5,21 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      level: 15,
+      readers: [],
       cards: this.props.cards || {},
       logs: this.props.logs || [],
       selectedCardId: null,
     };
+  }
+
+  handleLogout() {
+    window.socket.emit('logout');
+  }
+
+  handleLevel(newLevel) {
+    this.setState({level: newLevel});
+    window.socket.emit('level', newLevel);
   }
 
   handleNewCard() {
@@ -33,6 +44,21 @@ class App extends React.Component {
     this.deleteCard(id);
     // send to server
     window.socket.emit('card', id);
+  }
+
+  handleOpenDoor(name) {
+    if (confirm('Are you sure you want to open the ' + name + ' door?')) {
+      console.log('Open', name);
+      socket.emit('open', name);
+    }
+  }
+
+  setLevel(newLevel) {
+    this.setState({level: newLevel});
+  }
+
+  setReaders(readers) {
+    this.setState({readers: readers});
   }
 
   setCards(cards) {
@@ -119,6 +145,12 @@ class App extends React.Component {
 
     return (
       <section className="app">
+        <DoorEntry.Toolbar
+          level={this.state.level}
+          readers={this.state.readers}
+          onLogout={this.handleLogout.bind(this)}
+          onLevel={this.handleLevel.bind(this)}
+          onNewCard={this.handleNewCard.bind(this)} />
         <DoorEntry.CardList
           cards={this.state.cards}
           selectedCardId={this.state.selectedCardId}

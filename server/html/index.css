@@ -145,13 +145,13 @@ button.manuallyOpened {
 }
 .details span, .details pre {
 	display: inline-block;
-	background-color: #ccc;
+	background-color: #ddd;
 	padding: 2px;
 	cursor: text;
 }
 .details span {
 	white-space: nowrap;
-	overflow: scroll;
+	overflow: hidden;
 }
 .details span, .details input {
 	line-height: 1em;

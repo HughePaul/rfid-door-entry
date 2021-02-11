@@ -38,10 +38,6 @@ class DummySerialPort extends EventEmitter {
 			throw new Error('Options not specified');
 		}
 
-		if(typeof options.parser != 'function') {
-			throw new Error('Parser function not specified');
-		}
-
 		this._options = {
 			id: options.id || DummySerialPort.generateId(),
 			name: name || options.name,
@@ -179,7 +175,7 @@ class DummySerialPort extends EventEmitter {
 			this._isBusy = false;
 			if(this._isOpen) {
 				console.log(this.name, 'Outgoing', data.replace(/[\n\r]/g,'•'));
-				this._options.parser(this, new Buffer(data, 'ascii'));
+				this.emit('data', Buffer.from(data, 'ascii'));
 			}
 		}, this._options.replyDelay);
 	}

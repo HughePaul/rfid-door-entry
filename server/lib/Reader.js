@@ -97,14 +97,14 @@ class Reader extends EventEmitter {
 		return this._busy;
 	}
 
-  retryOpen() {
+    retryOpen() {
 		this._readerThrottleTimer = setTimeout(() => {
 			this._readerThrottleTimer = null;
 			this.open();
 		}, 5000);
 	}
 
-	_parser(emitter, buffer) {
+	_parser(buffer) {
 
 		// check buffer isn't out of range
 		var bad = false;
@@ -163,6 +163,10 @@ class Reader extends EventEmitter {
 			this.retryOpen();
 		});
 
+		this._device.on('data', buffer => {
+			this._parser(buffer);
+		});
+
 		this.reset();
 	}
 
@@ -185,7 +189,7 @@ class Reader extends EventEmitter {
 	_writeWaiting() {
 		if (this._commands.length && !this.busy && this._device) {
 			var next = this._commands.shift();
-			var data = new Buffer('\r\n' + next.command + '\r\n', 'ascii');
+			var data = Buffer.from('\r\n' + next.command + '\r\n', 'ascii');
 			this._busy = true;
 			this._lastid = next.id;
 			this.emit('dataout', data);

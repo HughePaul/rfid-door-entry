@@ -26,7 +26,7 @@ class SerialReader extends Reader {
 
 		port = '/dev/' + port;
 
-		return new SerialPort.SerialPort(port, {
+		return new SerialPort(port, {
 			baudrate: 9600,
 			parser: this._parser.bind(this)
 		});

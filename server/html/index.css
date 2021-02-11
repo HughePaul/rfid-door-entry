@@ -176,6 +176,8 @@ button.manuallyOpened {
 
 .loglist {
 	position: absolute;
+	display: flex;
+	flex-direction: column;
 	left: 255px;
 	right: 5px;
 	top: 370px;
@@ -209,6 +211,7 @@ button.manuallyOpened {
 }
 
 .log {
+	display: flex;
 	margin-bottom: 5px;
 	cursor: hand;
 	border: solid 1px #888;
@@ -250,21 +253,17 @@ button.manuallyOpened {
 	min-width: 90px;
 	padding-right: 5px;
 	font-weight: bold;
-	float: left;
 }
 .log .reader {
 	min-width: 90px;
 	padding-right: 5px;
-	float: left;
 }
 .log .text {
-	float: left;
 	min-width: 225px;
 }
 
 .log .timestamp {
-	float: right;
-	padding-right: 3px;
+	padding-right: 20px;
 	color: #444;
 }
 

@@ -122,6 +122,7 @@ class CardDetails extends React.Component {
           <Vendor.InlineEdit
             paramName="avatar"
             text={card.avatar || ''}
+            minLength="0"
             enabled={isEnabled}
             change={this.handleChange.bind(this)} />
         </div>

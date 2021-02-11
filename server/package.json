@@ -11,22 +11,22 @@
   },
   "dependencies": {
     "async": "latest",
+    "connect": "^3.7.0",
+    "morgan": "^1.10.0",
+    "node-gcm": "^1.0.3",
     "serialport": "latest",
-    "connect": "latest",
-    "morgan": "latest",
-    "serve-static": "latest",
-    "socket.io": "latest",
-    "sqlite3": "latest",
-    "node-gcm": "latest"
+    "serve-static": "^1.14.1",
+    "socket.io": "^3.1.1",
+    "sqlite3": "latest"
   },
   "devDependencies": {
-    "chai": "^3.4.1",
-    "eslint": "^1.10.3",
-    "istanbul": "^0.4.1",
-    "mocha": "2.3.x",
-    "mockery": "^1.4.0",
-    "sinon": "latest",
-    "sinon-chai": "^2.8.0"
+    "chai": "^4.3.0",
+    "eslint": "^7.19.0",
+    "istanbul": "^0.4.5",
+    "mocha": "^8.2.1",
+    "mockery": "^2.1.0",
+    "sinon": "^9.2.4",
+    "sinon-chai": "^3.5.0"
   },
   "scripts": {
     "start": "node ./ >> doorentry.log 2>&1 &\necho $! > doorentry.pid",

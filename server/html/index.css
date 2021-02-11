@@ -250,17 +250,14 @@ button.manuallyOpened {
 	min-width: 90px;
 	padding-right: 5px;
 	font-weight: bold;
-	display: inline-block;
 	float: left;
 }
 .log .reader {
 	min-width: 90px;
 	padding-right: 5px;
-	display: inline-block;
 	float: left;
 }
 .log .text {
-	display: inline-block;
 	float: left;
 	min-width: 225px;
 }

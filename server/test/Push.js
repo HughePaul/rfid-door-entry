@@ -21,7 +21,7 @@ describe('Push', function() {
   beforeEach(function() {
 
     // create a sandbox
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
 
     gcmStub = {
       Sender: sandbox.stub(),

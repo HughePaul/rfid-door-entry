@@ -112,7 +112,7 @@ if (config.ssl) {
 
 // Listen for sockets
 var socketio = require('socket.io');
-var io = socketio.listen(server);
+var io = socketio(server);
 
 function userCookie(username) {
 	if (!config.users[username]) {

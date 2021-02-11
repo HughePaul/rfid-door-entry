@@ -137,7 +137,7 @@ io.sockets.on('connection', function(socket) {
 			}
 		});
 		// get a bunch of logs
-		cards.getLog(30, function(err, items) {
+		cards.getLog(config.logLines || 30, function(err, items) {
 			if (!err) {
 				socket.emit('logs', items);
 			}

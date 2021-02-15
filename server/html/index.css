@@ -239,8 +239,11 @@ button.manuallyOpened {
 .log.ACCESS {
 	background-color: #8f8;
 }
-.log.OPENED {
+.log.REMOTE {
 	background-color: #ff8;
+}
+.log.OPENED, .log.MANUAL, .log.CLOSED {
+	background-color: #c9f;
 }
 .log.REMOVED {
 	background-color: #fdd;

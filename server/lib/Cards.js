@@ -111,7 +111,7 @@ function Cards(config, readers) {
 		return that;
 	};
 	this.getLastOpenedPeriod = function(reader, cb) {
-		db.get("SELECT timestamp FROM log WHERE ( type = 'OPENED' OR type = 'DOOR' ) AND reader = ? ORDER BY ID DESC LIMIT 1", [
+		db.get("SELECT timestamp FROM log WHERE ( type = 'OPENED' OR type = 'MANUAL' ) AND reader = ? ORDER BY ID DESC LIMIT 1", [
 			reader
 		], function(err, last) {
 			if (err || !last) {
@@ -485,7 +485,7 @@ function Cards(config, readers) {
 				if (state === Reader.DOOR_MANUAL) {
 					that.addLog({
 						reader: reader.name,
-						type: 'DOOR',
+						type: 'MANUAL',
 						desc: 'Door manually opened'
 					});
 				}
@@ -510,8 +510,8 @@ function Cards(config, readers) {
 			reader.activate(function() {
 				that.addLog({
 					reader: reader.name,
-					type: 'OPENED',
-					desc: 'Door opened by ' + loggedInUsername
+					type: 'REMOTE',
+					desc: 'Door remotely triggered by ' + loggedInUsername
 				});
 				if (cb) {
 					cb(reader.name, loggedInUsername);

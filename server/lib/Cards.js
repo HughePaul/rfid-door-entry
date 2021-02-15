@@ -110,6 +110,24 @@ function Cards(config, readers) {
 		});
 		return that;
 	};
+	this.getLastOpenedPeriod = function(reader, cb) {
+		db.get("SELECT timestamp FROM log WHERE ( type = 'OPENED' OR type = 'DOOR' ) AND reader = ? ORDER BY ID DESC LIMIT 1", [
+			reader
+		], function(err, last) {
+			if (err || !last) {
+				console.log('Cant find open period', err, last);
+				return cb();
+			}
+			let period = Math.round((new Date() - new Date(last.timestamp)) / 1000);
+			let val = period;
+			let text = '';
+			if (val > 3600 ) { text += + Math.floor(val / 3600) + ' hours, '; val = val % 3600; }
+			if (val > 60 ) { text += + Math.floor(val / 60) + ' mins, '; val = val % 60; }
+			text += val + ' secs';
+			return cb(null, period, text);
+		});
+		return that;
+	};
 	this.saveLevel = function() {
 		db.run("UPDATE settings SET level = ?", [that.level], function(err) {
 			if (err) {
@@ -451,16 +469,33 @@ function Cards(config, readers) {
 				}
 			})
 			.on('activate', function() {
-				//			that.addLog({reader: reader.name, type: 'OPENED', desc: 'Door Unlocked'});
+				// that.addLog({reader: reader.name, type: 'OPENED', desc: 'Door Unlocked'});
 				that.emit('opened', reader.name);
 			})
 			.on('door', function(state) {
+				// console.log('DOOR', state);
 				//			that.addLog({reader: reader.name, type: 'DOOR', desc: state});
+				if (state === Reader.DOOR_OPENED) {
+					that.addLog({
+						reader: reader.name,
+						type: 'OPENED',
+						desc: 'Door electronically opened'
+					});
+				}
 				if (state === Reader.DOOR_MANUAL) {
 					that.addLog({
 						reader: reader.name,
 						type: 'DOOR',
 						desc: 'Door manually opened'
+					});
+				}
+				if (state === Reader.DOOR_CLOSED) {
+					that.getLastOpenedPeriod(reader.name, (err, period, text) => {
+						that.addLog({
+							reader: reader.name,
+							type: 'CLOSED',
+							desc: 'Door closed after ' + text
+						});	
 					});
 				}
 				that.emit('door', reader.name, state);

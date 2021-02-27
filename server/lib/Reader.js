@@ -5,6 +5,8 @@ var EventEmitter = require('events')
 var Throttle = require('./throttle');
 var Delimiter = require('@serialport/parser-delimiter');
 
+var debug = require('debug')('entry');
+
 var pad = (v, l) => {
 	v = (v + '').substr(0,l);
 	while (v.length < l) {
@@ -119,10 +121,12 @@ class Reader extends EventEmitter {
 		} catch (e) {
 			this._device = null;
 			this.emit('error', e);
+			debug('error', [e]);
 			return;
 		}
 
 		this._device.on('open', () => {
+			debug('Opened');
 			this.emit('open');
 			this.getIdFromReader();
 			this.setLevel(this.level);
@@ -130,6 +134,7 @@ class Reader extends EventEmitter {
 		});
 
 		this._device.on('close', () => {
+			debug('Closed');
 			this._device = null;
 			this.emit('close');
 			this.reset();
@@ -139,6 +144,7 @@ class Reader extends EventEmitter {
 		this._parser = this._device.pipe(new Delimiter({ delimiter: '\r\n' }))
 		
 		this._parser.on('data', buffer => {
+			debug('Data', { buffer });
 			this._decode(buffer);
 		});
 
@@ -153,6 +159,7 @@ class Reader extends EventEmitter {
 	}
 
 	write(command, id, cb) {
+		debug('Write', { command, id });
 		this._commands.push({
 			command: command,
 			id: id,
@@ -203,6 +210,7 @@ class Reader extends EventEmitter {
 			case '@':
 				this.reset();
 				this.emit('reset');
+				debug('decode', ['reset']);
 				this.setLevel(this.level);
 				this.getCards();
 				break;
@@ -214,6 +222,7 @@ class Reader extends EventEmitter {
 
 				if (error.code === '50') {
 					this.emit('notfound', this._lastid);
+					debug('decode', ['notfound', this._lastid]);
 				} else {
 					switch (error.code) {
 						case '01':
@@ -245,16 +254,19 @@ class Reader extends EventEmitter {
 							break;
 					}
 					this.emit('error', error, this._lastid);
+					debug('decode', ['error', error, this._lastid]);
 				}
 				break;
 				// id from reader
 			case 'I':
 				this._readerId = parseInt(line.substr(2, 2), 16) || 0;
 				this.emit('id', this._readerId);
+				debug('decode', ['id', this._readerId]);
 				break;
 				// relay was manually activated
 			case 'O':
 				this.emit('activate');
+				debug('decode', ['activate']);
 				break;
 				// card list
 			case 'P':
@@ -263,12 +275,14 @@ class Reader extends EventEmitter {
 					this._busy = true;
 				} else {
 					this.emit('cards', this.cards);
+					debug('decode', ['cards', this.cards]);
 				}
 				break;
 				// current access level
 			case 'S':
 				this._level = parseInt(line.substr(2, 1), 16);
 				this.emit('level', this._level);
+				debug('decode', ['level', this._level]);
 				break;
 				// current door state
 			case 'D':
@@ -294,35 +308,42 @@ class Reader extends EventEmitter {
 				if(!card) { break; }
 				this._cards[card.id] = card.level;
 				this.emit('add', card.id, card.level);
+				debug('decode', ['add', card.id, card.level]);
 				break;
 				// a card was removed
 			case 'R':
 				if(!card) { break; }
 				delete this._cards[card.id];
 				this.emit('remove', card.id, card.level);
+				debug('decode', ['remove', card.id, card.level]);
 				break;
 				// access granted
 			case 'G':
 				if(!card) { break; }
 				this._cards[card.id] = card.level;
 				this.emit('access', card.id, card.level);
+				debug('decode', ['access', card.id, card.level]);
 				break;
 				// unknown card
 			case 'B':
 				if(!card) { break; }
 				this.emit('unknown', card.id);
+				debug('decode', ['unknown', card.id]);
 				break;
 				// card found but access level too low
 			case 'N':
 				if(!card) { break; }
 				this._cards[card.id] = card.level;
 				this.emit('noaccess', card.id, card.level);
+				debug('decode', ['noaccess', card.id, card.level]);
 				break;
 			case '?':
 				this.emit('badcommand');
+				debug('decode', ['badcommand']);
 				break;
 			default:
 				this.emit('error', 'Unknown response from reader: ' + line);
+				debug('decode', ['error', 'Unknown response from reader: ' + line]);
 		}
 
 		this._writeWaiting();

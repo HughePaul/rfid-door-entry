@@ -13,6 +13,7 @@
     "@serialport/parser-delimiter": "^9.0.7",
     "async": "latest",
     "connect": "^3.7.0",
+    "debug": "^4.3.1",
     "morgan": "^1.10.0",
     "node-gcm": "^1.0.4",
     "serialport": "^9.0.7",

@@ -1,9 +1,8 @@
 'use strict';
 
-var EventEmitter = require('events')
-	.EventEmitter;
+var Stream = require('stream');
 
-class DummySerialPort extends EventEmitter {
+class DummySerialPort extends Stream.Readable {
 	static generateId(){
 		this._incId = this._incId || 0;
 		this._incId++;
@@ -41,7 +40,6 @@ class DummySerialPort extends EventEmitter {
 		this._options = {
 			id: options.id || DummySerialPort.generateId(),
 			name: name || options.name,
-			parser: options.parser,
 			level: options.level || 15,
 			cards: options.cards || [
 				{ id: '4-12345678901234', level: 4 },
@@ -59,6 +57,9 @@ class DummySerialPort extends EventEmitter {
 		this.resetDevice();
 
 		setTimeout( () => this.open() , this._options.replyDelay);
+	}
+
+	_read() {
 	}
 
 	resetDevice() {
@@ -175,7 +176,7 @@ class DummySerialPort extends EventEmitter {
 			this._isBusy = false;
 			if(this._isOpen) {
 				console.log(this.name, 'Outgoing', data.replace(/[\n\r]/g,'•'));
-				this.emit('data', Buffer.from(data, 'ascii'));
+				this.push(Buffer.from(data, 'ascii'));
 			}
 		}, this._options.replyDelay);
 	}

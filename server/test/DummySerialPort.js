@@ -34,7 +34,7 @@ var checkParserResponse = (port, expected, done, maxTime) => {
 var sendCommand = (port, command) => {
   // send a new line wrapped command to serial port after a short delay to allow it to open
   port.on('open', () => {
-    var data = new Buffer('\r\n' + command + '\r\n', 'ascii');
+    var data = Buffer.from('\r\n' + command + '\r\n', 'ascii');
     port.write(data);
   });
 };
@@ -415,7 +415,7 @@ describe('DummySerialPort', function() {
       });
 
       should.throw(() => {
-        port.write(new Buffer('\r\nI\r\n', 'ascii'));
+        port.write(Buffer.from('\r\nI\r\n', 'ascii'));
       });
 
     });
@@ -433,9 +433,9 @@ describe('DummySerialPort', function() {
       });
 
       port.on('open', () => {
-        port.write(new Buffer('\r\nI\r\n', 'ascii'));
+        port.write(Buffer.from('\r\nI\r\n', 'ascii'));
         should.throw(() => {
-          port.write(new Buffer('\r\nI\r\n', 'ascii'));
+          port.write(Buffer.from('\r\nI\r\n', 'ascii'));
         });
         done();
       });

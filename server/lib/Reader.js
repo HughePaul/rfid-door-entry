@@ -2,8 +2,8 @@
 
 var EventEmitter = require('events')
 	.EventEmitter;
-
 var Throttle = require('./throttle');
+var Delimiter = require('@serialport/parser-delimiter');
 
 var pad = (v, l) => {
 	v = (v + '').substr(0,l);
@@ -104,38 +104,11 @@ class Reader extends EventEmitter {
 		}, 5000);
 	}
 
-	_parser(buffer) {
-
-		// check buffer isn't out of range
-		var bad = false;
-		for (var i = 0; i < buffer.length; i++) {
-			if (buffer[i] < 10 || buffer[i] > 'Z') {
-				bad = true;
-			}
-		}
-
-		this.emit('datain', buffer, bad);
-
-		if (bad) {
-			return;
-		}
-
-		// Collect data
-		this._data += buffer.toString('ascii');
-
-		// Split collected data by delimiter
-		var parts = this._data.split('\r\n');
-		this._data = parts.pop();
-		parts.forEach((part) => {
-			this._decode(part);
-		});
-	}
-
 	_getDevice() {
 		throw new Error('Cannot use abstract Reader class');
 	}
 
-  open() {
+    open() {
 		if (this._readerThrottleTimer) {
 			return;
 		}
@@ -163,8 +136,10 @@ class Reader extends EventEmitter {
 			this.retryOpen();
 		});
 
-		this._device.on('data', buffer => {
-			this._parser(buffer);
+		this._parser = this._device.pipe(new Delimiter({ delimiter: '\r\n' }))
+		
+		this._parser.on('data', buffer => {
+			this._decode(buffer);
 		});
 
 		this.reset();
@@ -198,7 +173,22 @@ class Reader extends EventEmitter {
 		}
 	}
 
-	_decode(line) {
+	_decode(buffer) {
+		var bad = false;
+		for (var i = 0; i < buffer.length; i++) {
+			if (buffer[i] < 10 || buffer[i] > 'Z') {
+				bad = true;
+			}
+		}
+
+		this.emit('datain', buffer, bad);
+
+		if (bad) {
+			return;
+		}
+
+		var line = buffer.toString('ascii');
+
 		var reply = line.substr(0, 1);
 		var card = Reader.hexToCard( line.substr(2, 16));
 
